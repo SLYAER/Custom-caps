@@ -13,6 +13,7 @@
 @layer base {
   body {
     @apply bg-[#030014] text-white antialiased selection:bg-cyan-500/30;
+    user-select: none;
   }
 }
 

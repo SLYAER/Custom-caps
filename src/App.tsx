@@ -255,7 +255,7 @@ export default function App() {
     bottleColor: '#FFFFFF',
     capColor: '#171717',
     textColor: '#000000',
-    customText: 'SIPS 2024',
+    customText: 'CAPS 2024',
     logo: null as string | null,
     textScale: 1,
     textPosition: 0.4,
@@ -311,7 +311,7 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
           <div className="flex items-center gap-2">
             <Box className="w-8 h-8 text-cyan-400" />
-            <span className="font-display font-black text-2xl tracking-tighter">SIPS<span className="text-cyan-400">CUSTOM</span></span>
+            <span className="font-display font-black text-2xl tracking-tighter">CUSTOM<span className="text-cyan-400">CAPS</span></span>
           </div>
           
           <div className="flex gap-4 items-center">
@@ -922,7 +922,7 @@ function AuthScreen() {
       >
         <div className="flex items-center justify-center gap-2 mb-10">
           <Box className="w-8 h-8 text-cyan-400" />
-          <span className="font-display font-black text-3xl tracking-tighter uppercase italic">SIPS<span className="text-cyan-400">LAB</span></span>
+          <span className="font-display font-black text-3xl tracking-tighter uppercase italic">CUSTOM<span className="text-cyan-400">CAPS</span></span>
         </div>
 
         <h2 className="text-2xl font-black uppercase text-center mb-2 tracking-tight">
