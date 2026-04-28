@@ -16,7 +16,7 @@ service cloud.firestore {
       allow list: if isAdmin();
       allow get: if request.auth != null && (request.auth.token.email == resource.data.customerEmail || isAdmin());
       // Allows user to create their own order, admin to do anything
-      allow create: if request.auth != null && (request.resource.data.customerEmail == request.auth.token.email || isAdmin());
+      allow create: if (request.auth != null && (request.resource.data.customerEmail == request.auth.token.email || isAdmin())) || (request.resource.data.customerEmail != null);
       allow update, delete: if isAdmin();
     }
   }
