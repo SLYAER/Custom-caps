@@ -148,12 +148,7 @@ export function AdminPanel() {
             </button>
             
             <div className="h-[60vh] w-full max-w-lg relative bg-transparent rounded-3xl overflow-hidden cursor-move">
-              <Canvas camera={{ position: [0, 0, 10], fov: 45 }}>
-                  <ambientLight intensity={0.8} />
-                  <directionalLight position={[5, 10, 5]} intensity={1.5} />
-                  <directionalLight position={[-5, 5, -5]} intensity={0.5} />
-                  <Bottle3DPreview selection={previewItem} setSelection={() => {}} />
-              </Canvas>
+              <Bottle3DPreview selection={previewItem} setSelection={() => {}} />
             </div>
             
             <div className="mt-8 text-center bg-white/5 p-6 rounded-3xl border border-white/10 backdrop-blur-md">
