@@ -63,9 +63,10 @@ const SHAPES = [
   { id: 'wide', name: 'Rugged Wide', radius: 1.3, height: 3.5 },
 ];
 
-type Step = 'material' | 'occasion' | 'design' | 'review' | 'checkout';
+type Step = 'material' | 'occasion' | 'design' | 'review' | 'checkout' | 'about';
 
 // --- Realistic Preview Component ---
+import { AboutPage } from './About';
 function BottleRealisticPreview({ selection }: { selection: any }) {
   const isGlass = selection.material.id === 'glass';
   const isMetal = selection.material.id === 'stainless';
@@ -750,12 +751,17 @@ export default function App() {
           {currentStep === 'checkout' && (
             <CheckoutStep userEmail={user?.email || ''} />
           )}
+
+          {currentStep === 'about' && (
+             <AboutPage onBack={() => nextStep('material')} />
+          )}
         </AnimatePresence>
       </main>
       
       {/* Footer Branding */}
-      <footer className="relative z-10 py-10 border-t border-white/5 text-center mt-auto">
+      <footer className="relative z-10 py-10 border-t border-white/5 text-center mt-auto flex flex-col items-center gap-4">
          <p className="text-[10px] font-black text-neutral-600 uppercase tracking-[0.4em]">Proprietary Customisation Platform v4.0.0-PRO</p>
+         <button onClick={() => nextStep('about')} className="text-xs font-bold text-neutral-500 hover:text-cyan-400 uppercase tracking-widest transition-colors">About Us</button>
       </footer>
     </div>
   );
@@ -850,15 +856,26 @@ function AuthScreen() {
 
   useEffect(() => {
     const tryAutoLogin = async () => {
+      // Wait for Firebase to attempt session restoration
+      await new Promise(resolve => setTimeout(resolve, 500));
+      if (auth.currentUser) return; 
+
       try {
         const storedEmail = localStorage.getItem('sips_preview_email');
         const storedPass = localStorage.getItem('sips_preview_pass');
         if (storedEmail && storedPass) {
            setLoading(true);
            await signInWithEmailAndPassword(auth, storedEmail, atob(storedPass));
+           setLoading(false);
         }
-      } catch {
+      } catch (err) {
         setLoading(false);
+        console.error('Auto-login failed', err);
+        // Clear broken credentials
+        try { 
+          localStorage.removeItem('sips_preview_email'); 
+          localStorage.removeItem('sips_preview_pass'); 
+        } catch {}
       }
     };
     tryAutoLogin();
