@@ -866,7 +866,13 @@ function CheckoutStep({ userEmail, basket, setBasket }: { userEmail: string, bas
                 <Mail className="w-5 h-5 text-cyan-400" />
                 <span className="font-bold text-sm uppercase tracking-widest text-neutral-300">Tracking Email</span>
               </div>
-              <div className="flex flex-col gap-4">
+              <form 
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleOrderConfirmation();
+                }}
+                className="flex flex-col gap-4"
+              >
                 <input 
                   type="email"
                   value={email}
@@ -876,12 +882,12 @@ function CheckoutStep({ userEmail, basket, setBasket }: { userEmail: string, bas
                   required
                 />
                 <button 
-                  onClick={handleOrderConfirmation}
+                  type="submit"
                   className="w-full bg-cyan-500 hover:bg-cyan-400 text-black py-4 rounded-2xl font-black text-sm uppercase tracking-widest transition-all"
                 >
                   Confirm Order Updates
                 </button>
-              </div>
+              </form>
           </div>
         )}
 
@@ -1046,11 +1052,27 @@ function AuthScreen({ onGuest }: { onGuest: () => void }) {
                     setError('Please enter your email address first.');
                     return;
                   }
+                  
+                  // Simple rate limiting in UI
+                  const lastReset = localStorage.getItem('last_password_reset');
+                  if (lastReset && Date.now() - parseInt(lastReset) < 60000) {
+                      setError('Please wait 1 minute before requesting another reset email.');
+                      return;
+                  }
+
                   try {
                     await sendPasswordResetEmail(auth, email);
+                    localStorage.setItem('last_password_reset', Date.now().toString());
                     alert('Password reset email sent. Please check your inbox.');
                   } catch (err: any) {
-                    setError(err.message);
+                    // Provide clearer instructions for common auth failures
+                    if (err.code === 'auth/user-not-found') {
+                       setError('No account found with this email.');
+                    } else if (err.code === 'auth/too-many-requests') {
+                       setError('Too many requests. Please try again later.');
+                    } else {
+                       setError(err.message || 'Failed to send reset email.');
+                    }
                   }
                 }}
                 className="text-xs font-bold uppercase tracking-widest text-neutral-500 hover:text-cyan-400 transition-colors"
