@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { db } from './lib/firebase';
-import { collection, getDocs, addDoc, updateDoc, doc } from 'firebase/firestore';
+import { collection, getDocs, addDoc, updateDoc, doc, onSnapshot } from 'firebase/firestore';
 import { motion } from 'framer-motion';
 
 export function AdminPanel() {
@@ -8,21 +8,25 @@ export function AdminPanel() {
   const [orders, setOrders] = useState<any[]>([]);
   const [newItem, setNewItem] = useState({ name: '', price: 0 });
 
-  const fetchData = async () => {
+  const fetchData = () => {
     try {
-        const itemsSnapshot = await getDocs(collection(db, 'items'));
-        setItems(itemsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        getDocs(collection(db, 'items')).then(itemsSnapshot => {
+            setItems(itemsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        });
         
-        const ordersSnapshot = await getDocs(collection(db, 'orders'));
-        console.log("Fetched orders:", ordersSnapshot.size);
-        setOrders(ordersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        const q = collection(db, 'orders');
+        return onSnapshot(q, (snapshot) => {
+            console.log("Fetched orders:", snapshot.size);
+            setOrders(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        });
     } catch (error) {
         console.error("Firestore Error: ", error);
     }
   };
 
   useEffect(() => {
-    fetchData();
+    const unsubscribe = fetchData();
+    return () => { if (unsubscribe) unsubscribe(); };
   }, []);
 
   const handleAddItem = async () => {

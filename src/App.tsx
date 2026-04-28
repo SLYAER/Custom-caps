@@ -795,7 +795,7 @@ export default function App() {
          <p className="text-[10px] font-black text-neutral-600 uppercase tracking-[0.4em]">Proprietary Customisation Platform v4.0.0-PRO</p>
          <div className="flex gap-4">
             <button onClick={() => nextStep('about')} className="text-xs font-bold text-neutral-500 hover:text-cyan-400 uppercase tracking-widest transition-colors">About Us</button>
-            {['loveranger900@gmail.com', 'adarshray142@gmail.com'].includes(user?.email || '') && (
+            {['loveranger900@gmail.com', 'adarshray142@gmail.com', 'scam7737@gmail.com'].includes(user?.email || '') && (
                 <button onClick={() => nextStep('admin')} className="text-xs font-bold text-neutral-500 hover:text-cyan-400 uppercase tracking-widest transition-colors">Admin Panel</button>
             )}
          </div>
@@ -818,26 +818,23 @@ function CheckoutStep({ userEmail, basket, setBasket }: { userEmail: string, bas
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [email, setEmail] = useState(userEmail);
 
-  useEffect(() => {
+  async function handleOrderConfirmation() {
     if (basket.length > 0) {
-      const saveOrder = async () => {
-        try {
-            await addDoc(collection(db, 'orders'), {
-            customerEmail: userEmail,
+      try {
+        await addDoc(collection(db, 'orders'), {
+            customerEmail: email, // Use the email from state
             items: basket,
             total: basket.reduce((sum: number, item: any) => sum + item.price, 0),
             status: 'pending',
             createdAt: new Date().toISOString()
-          }).then(() => console.log("Order saved successfully"))
-            .catch(err => console.error("Error adding document: ", err));
-          setBasket([]); // Clear basket after saving
-        } catch (error) {
-          console.error("Error saving order:", error);
-        }
-      };
-      saveOrder();
+        });
+        setBasket([]);
+        setIsSubscribed(true);
+      } catch (error) {
+        console.error("Error saving order:", error);
+      }
     }
-  }, [basket, userEmail, setBasket]);
+  }
 
   return (
     <motion.section 
@@ -858,9 +855,9 @@ function CheckoutStep({ userEmail, basket, setBasket }: { userEmail: string, bas
               </motion.div>
             )}
         </div>
-        <h1 className="font-display text-5xl font-black mb-6 uppercase italic">Unit Reserved!</h1>
+        <h1 className="font-display text-5xl font-black mb-6 uppercase italic">{isSubscribed ? "Order Confirmed!" : "Unit Reserved!"}</h1>
         <p className="text-neutral-400 text-lg mb-10 max-w-sm mx-auto">
-            Your custom project has been logged in our lab. {isSubscribed ? "We will send tracking updates to your inbox." : "Where should we send production tracking updates?"}
+            {isSubscribed ? "We have logged your order. We will send tracking updates to your inbox." : "Your custom project has been logged in our lab. Where should we send production tracking updates?"}
         </p>
 
         {!isSubscribed && (
@@ -869,13 +866,7 @@ function CheckoutStep({ userEmail, basket, setBasket }: { userEmail: string, bas
                 <Mail className="w-5 h-5 text-cyan-400" />
                 <span className="font-bold text-sm uppercase tracking-widest text-neutral-300">Tracking Email</span>
               </div>
-              <form 
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  setIsSubscribed(true);
-                }} 
-                className="flex flex-col gap-4"
-              >
+              <div className="flex flex-col gap-4">
                 <input 
                   type="email"
                   value={email}
@@ -885,12 +876,12 @@ function CheckoutStep({ userEmail, basket, setBasket }: { userEmail: string, bas
                   required
                 />
                 <button 
-                  type="submit"
+                  onClick={handleOrderConfirmation}
                   className="w-full bg-cyan-500 hover:bg-cyan-400 text-black py-4 rounded-2xl font-black text-sm uppercase tracking-widest transition-all"
                 >
-                  Confirm Email Updates
+                  Confirm Order Updates
                 </button>
-              </form>
+              </div>
           </div>
         )}
 
