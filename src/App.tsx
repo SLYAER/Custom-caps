@@ -279,14 +279,24 @@ export default function App() {
   const [currentStep, setCurrentStep] = useState<Step>('material');
   const [isBasketOpen, setIsBasketOpen] = useState(false);
   const [showMockingPopup, setShowMockingPopup] = useState(() => {
-    return localStorage.getItem('showMockingPopup') === 'true';
+    const time = localStorage.getItem('mockingPopupTime');
+    if (time) {
+      const elapsed = Date.now() - parseInt(time, 10);
+      if (elapsed < 30000) {
+        return true;
+      } else {
+        localStorage.removeItem('mockingPopupTime');
+      }
+    }
+    return false;
   });
+  const [mockingTimeLeft, setMockingTimeLeft] = useState(30);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isGuest, setIsGuest] = useState(false);
   const [basket, setBasket] = useState<any[]>([]);
   
   const handleCheckoutComplete = () => {
-    localStorage.setItem('showMockingPopup', 'true');
+    localStorage.setItem('mockingPopupTime', Date.now().toString());
     setShowMockingPopup(true);
   };
   const [selection, setSelection] = useState({
@@ -312,11 +322,43 @@ export default function App() {
 
   useEffect(() => {
     if (showMockingPopup) {
+      const time = localStorage.getItem('mockingPopupTime');
+      let remaining = 30000;
+      if (time) {
+        remaining = 30000 - (Date.now() - parseInt(time, 10));
+      }
+      
+      if (remaining <= 0) {
+        setShowMockingPopup(false);
+        localStorage.removeItem('mockingPopupTime');
+        return;
+      }
+      
+      setMockingTimeLeft(Math.ceil(remaining / 1000));
+      
+      const interval = setInterval(() => {
+        const storedTime = localStorage.getItem('mockingPopupTime');
+        if (storedTime) {
+          const currentRemaining = 30000 - (Date.now() - parseInt(storedTime, 10));
+          if (currentRemaining <= 0) {
+            setShowMockingPopup(false);
+            localStorage.removeItem('mockingPopupTime');
+            clearInterval(interval);
+          } else {
+            setMockingTimeLeft(Math.ceil(currentRemaining / 1000));
+          }
+        }
+      }, 500);
+      
       const timer = setTimeout(() => {
         setShowMockingPopup(false);
-        localStorage.removeItem('showMockingPopup');
-      }, 30000);
-      return () => clearTimeout(timer);
+        localStorage.removeItem('mockingPopupTime');
+      }, remaining);
+      
+      return () => {
+        clearTimeout(timer);
+        clearInterval(interval);
+      };
     }
   }, [showMockingPopup]);
 
@@ -857,8 +899,12 @@ export default function App() {
           <motion.div 
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="fixed inset-0 z-[9999] bg-red-600 flex items-center justify-center p-4"
+            className="fixed inset-0 z-[9999] bg-red-600 flex items-center justify-center p-4 flex-col"
           >
+            <div className="absolute top-4 right-4 bg-black text-red-500 font-mono text-4xl p-4 font-black border-4 border-black shadow-[8px_8px_0px_0px_rgba(255,255,255,1)] flex flex-col items-center">
+               <span className="text-xl leading-none mb-1 text-white">CLOSING IN</span>
+               <span className="text-6xl">{mockingTimeLeft}s</span>
+            </div>
             <div className="text-center w-full">
               <h1 className="text-5xl sm:text-7xl md:text-9xl font-black uppercase tracking-tighter text-black bg-white inline-block p-10 transform -rotate-3 border-8 border-black shadow-[20px_20px_0px_0px_rgba(0,0,0,1)]">
                 DEKHA MOTE HMARI BOTTLE TO BIK GYI TERI SOLAR CAR KB BIKEGI
