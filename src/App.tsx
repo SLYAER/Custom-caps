@@ -278,9 +278,16 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(true);
   const [currentStep, setCurrentStep] = useState<Step>('material');
   const [isBasketOpen, setIsBasketOpen] = useState(false);
+  const [showMockingPopup, setShowMockingPopup] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isGuest, setIsGuest] = useState(false);
   const [basket, setBasket] = useState<any[]>([]);
+  
+  const handleCheckoutComplete = () => {
+    setTimeout(() => {
+      setShowMockingPopup(true);
+    }, 60000); // 1 minute
+  };
   const [selection, setSelection] = useState({
     material: MATERIALS[0],
     occasion: OCCASIONS[0],
@@ -832,7 +839,26 @@ export default function App() {
       <footer className="relative z-10 py-10 border-t border-white/5 text-center mt-auto flex flex-col items-center gap-4">
          <p className="text-[10px] font-black text-neutral-600 uppercase tracking-[0.4em]">Proprietary Customisation Platform v4.0.0-PRO</p>
       </footer>
-      <BasketPanel isOpen={isBasketOpen} onClose={() => setIsBasketOpen(false)} basket={basket} setBasket={setBasket} userEmail={user?.email || ''} />
+      <BasketPanel isOpen={isBasketOpen} onClose={() => setIsBasketOpen(false)} basket={basket} setBasket={setBasket} userEmail={user?.email || ''} onCheckoutComplete={handleCheckoutComplete} />
+      
+      <AnimatePresence>
+        {showMockingPopup && (
+          <motion.div 
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="fixed inset-0 z-[9999] bg-red-600 flex items-center justify-center p-4"
+          >
+            <div className="text-center w-full">
+              <h1 className="text-5xl sm:text-7xl md:text-9xl font-black uppercase tracking-tighter text-black bg-white inline-block p-10 transform -rotate-3 border-8 border-black shadow-[20px_20px_0px_0px_rgba(0,0,0,1)]">
+                DEKHA MOTE HMARI BOTTLE TO BIK GYI TERI SOLAR CAR KB BIKEGI
+              </h1>
+              <p className="mt-12 text-3xl font-black text-black bg-yellow-400 inline-block px-6 py-2 transform rotate-2 border-4 border-black">
+                - Parth Mehta
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {isSidebarOpen && (

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { db } from '../lib/firebase';
 import { collection, addDoc } from 'firebase/firestore';
 
-export function BasketPanel({ isOpen, onClose, basket, setBasket, userEmail }: any) {
+export function BasketPanel({ isOpen, onClose, basket, setBasket, userEmail, onCheckoutComplete }: any) {
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [email, setEmail] = useState(userEmail || '');
   const [isSubscribed, setIsSubscribed] = useState(false);
@@ -64,6 +64,9 @@ export function BasketPanel({ isOpen, onClose, basket, setBasket, userEmail }: a
         });
         setBasket([]);
         setIsSubscribed(true);
+        if (onCheckoutComplete) {
+            onCheckoutComplete();
+        }
       } catch (error: any) {
         console.error("Error saving order:", error);
         setError('Failed to confirm order: ' + error.message);

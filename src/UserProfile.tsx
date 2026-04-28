@@ -53,8 +53,12 @@ export function UserProfile({ user }: { user: any }) {
     if (!user) return;
     setSaving(true);
     try {
-      await setDoc(doc(db, 'users', user.uid), editForm, { merge: true });
-      setProfile(editForm);
+      const finalForm = { ...editForm };
+      if (finalForm.name.toUpperCase() === 'MOHIT') {
+        finalForm.name = 'SOLAR BATTERY';
+      }
+      await setDoc(doc(db, 'users', user.uid), finalForm, { merge: true });
+      setProfile(finalForm);
       setIsEditing(false);
     } catch (err) {
       console.error("Error saving profile:", err);
