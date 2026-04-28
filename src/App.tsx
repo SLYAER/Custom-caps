@@ -89,12 +89,13 @@ const SIZES = [
   { id: '1L', name: '1L', priceAdd: 250 },
 ];
 
-type Step = 'material' | 'occasion' | 'design' | 'review' | 'about' | 'admin' | 'orders';
+type Step = 'material' | 'occasion' | 'design' | 'review' | 'about' | 'admin' | 'orders' | 'profile';
 
 // --- Realistic Preview Component ---
 import { AboutPage } from './About';
 import { AdminPanel } from './AdminPanel';
 import { BasketPanel } from './components/BasketPanel';
+import { UserProfile } from './UserProfile';
 function BottleRealisticPreview({ selection }: { selection: any }) {
   const isGlass = selection.material.id === 'glass';
   const isMetal = selection.material.id === 'stainless';
@@ -820,6 +821,10 @@ export default function App() {
           {currentStep === 'orders' && (
              <CustomerOrders userEmail={user?.email || ''} />
           )}
+
+          {currentStep === 'profile' && user && (
+             <UserProfile user={user} />
+          )}
         </AnimatePresence>
       </main>
       
@@ -858,6 +863,7 @@ export default function App() {
 
               <div className="flex flex-col gap-8 font-display font-black text-3xl sm:text-4xl italic uppercase tracking-tighter">
                   <button onClick={() => { setIsSidebarOpen(false); nextStep('material'); }} className="text-left py-2 hover:text-cyan-400 transition-colors text-white">Home</button>
+                  <button onClick={() => { setIsSidebarOpen(false); nextStep('profile'); }} className="text-left py-2 hover:text-cyan-400 transition-colors text-white">Profile</button>
                   <button onClick={() => { setIsSidebarOpen(false); nextStep('orders'); }} className="text-left py-2 hover:text-cyan-400 transition-colors text-white">My Orders</button>
                   <button onClick={() => { setIsSidebarOpen(false); nextStep('about'); }} className="text-left py-2 hover:text-cyan-400 transition-colors text-white">About Us</button>
                   {['loveranger900@gmail.com', 'adarshray142@gmail.com', 'scam7737@gmail.com'].includes(user?.email || '') && (
