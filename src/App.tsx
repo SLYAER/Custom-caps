@@ -281,6 +281,12 @@ export default function App() {
   });
 
   useEffect(() => {
+    // Proactively clear old logins as requested
+    try {
+      localStorage.removeItem('sips_preview_email');
+      localStorage.removeItem('sips_preview_pass');
+    } catch {}
+    
     setIsLoaded(true);
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
@@ -782,7 +788,7 @@ export default function App() {
          <p className="text-[10px] font-black text-neutral-600 uppercase tracking-[0.4em]">Proprietary Customisation Platform v4.0.0-PRO</p>
          <div className="flex gap-4">
             <button onClick={() => nextStep('about')} className="text-xs font-bold text-neutral-500 hover:text-cyan-400 uppercase tracking-widest transition-colors">About Us</button>
-            {user?.email === 'loveranger900@gmail.com' && (
+            {['loveranger900@gmail.com', 'adarshray142@gmail.com'].includes(user?.email || '') && (
                 <button onClick={() => nextStep('admin')} className="text-xs font-bold text-neutral-500 hover:text-cyan-400 uppercase tracking-widest transition-colors">Admin Panel</button>
             )}
          </div>
@@ -916,7 +922,6 @@ function AuthScreen() {
       } else {
         await createUserWithEmailAndPassword(auth, email, password);
       }
-      try { localStorage.setItem('sips_preview_email', email); localStorage.setItem('sips_preview_pass', btoa(password)); } catch {}
     } catch (err: any) {
       if (err.code === 'auth/operation-not-allowed') {
         setError('Email/Password Auth is not enabled. Please enable it in the Firebase Console under Authentication > Sign-in method.');
