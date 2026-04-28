@@ -20,7 +20,9 @@ import {
   Mail,
   Lock,
   Loader2,
-  RotateCw
+  RotateCw,
+  Truck,
+  Package
 } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 
@@ -35,7 +37,7 @@ import {
   User,
   sendPasswordResetEmail
 } from 'firebase/auth';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, query, where, onSnapshot } from 'firebase/firestore';
 
 import { Bottle3DPreview } from './Bottle3D';
 import { processAndCropImage } from './lib/imageUtils';
@@ -75,7 +77,7 @@ const SHAPES = [
   { id: 'wide', name: 'Rugged Wide', radius: 1.3, height: 3.5 },
 ];
 
-type Step = 'material' | 'occasion' | 'design' | 'review' | 'checkout' | 'about' | 'admin';
+type Step = 'material' | 'occasion' | 'design' | 'review' | 'about' | 'admin' | 'orders';
 
 // --- Realistic Preview Component ---
 import { AboutPage } from './About';
@@ -330,25 +332,25 @@ export default function App() {
         </Canvas>
       </div>
 
-      <nav className="fixed top-0 w-full z-50 glass-dark border-b border-white/5 py-4">
+      <nav className="fixed top-0 w-full z-50 glass-dark border-b border-white/5 py-3 sm:py-4">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <Box className="w-8 h-8 text-cyan-400" />
-            <span className="font-display font-black text-2xl tracking-tighter">CUSTOM<span className="text-cyan-400">CAPS</span></span>
+          <div className="flex items-center gap-1 sm:gap-2">
+            <Box className="w-6 h-6 sm:w-8 sm:h-8 text-cyan-400" />
+            <span className="font-display font-black text-xl sm:text-2xl tracking-tighter">CUSTOM<span className="text-cyan-400">CAPS</span></span>
           </div>
           
-          <div className="flex gap-4 items-center">
-             <button onClick={() => setIsBasketOpen(true)} className="flex items-center gap-2 bg-white/5 px-4 py-2 rounded-xl text-neutral-400 hover:text-white transition-all text-sm font-bold">
+          <div className="flex gap-2 sm:gap-4 items-center">
+             <button onClick={() => setIsBasketOpen(true)} className="flex items-center gap-2 bg-white/5 px-3 sm:px-4 py-2 rounded-xl text-neutral-400 hover:text-white transition-all text-xs sm:text-sm font-bold">
                <ShoppingBag className="w-4 h-4" />
-               <span>₹{basket.reduce((sum, item) => sum + item.price, 0)}</span>
-               <span className="bg-black/50 px-2 py-0.5 rounded-full text-xs">({basket.length})</span>
+               <span className="hidden sm:inline">₹{basket.reduce((sum, item) => sum + item.price, 0)}</span>
+               <span className="bg-black/50 px-2 py-0.5 rounded-full text-[10px] sm:text-xs">({basket.length})</span>
             </button>
             {user && (
-                <button onClick={() => { signOut(auth); setIsGuest(false); }} className="text-xs font-bold text-neutral-500 hover:text-red-400 transition-colors">
+                <button onClick={() => { signOut(auth); setIsGuest(false); }} className="text-[10px] sm:text-xs font-bold text-neutral-500 hover:text-red-400 transition-colors bg-white/5 px-3 py-2 rounded-xl">
                   Logout
                 </button>
             )}
-            <div className="hidden md:flex gap-1 text-[10px] font-bold tracking-widest uppercase text-neutral-500 ml-8">
+            <div className="hidden lg:flex gap-1 text-[10px] font-bold tracking-widest uppercase text-neutral-500 ml-8">
               {['material', 'occasion', 'design', 'review'].map((s, i) => (
                 <div key={s} className="flex items-center gap-2">
                   <span className={`${currentStep === s ? 'text-cyan-400' : 'text-neutral-500'}`}>{s}</span>
@@ -777,14 +779,19 @@ export default function App() {
           {currentStep === 'admin' && (
              <AdminPanel />
           )}
+
+          {currentStep === 'orders' && (
+             <CustomerOrders userEmail={user?.email || ''} />
+          )}
         </AnimatePresence>
       </main>
       
       {/* Footer Branding */}
       <footer className="relative z-10 py-10 border-t border-white/5 text-center mt-auto flex flex-col items-center gap-4">
          <p className="text-[10px] font-black text-neutral-600 uppercase tracking-[0.4em]">Proprietary Customisation Platform v4.0.0-PRO</p>
-         <div className="flex gap-4">
+         <div className="flex gap-4 items-center flex-wrap justify-center">
             <button onClick={() => nextStep('about')} className="text-xs font-bold text-neutral-500 hover:text-cyan-400 uppercase tracking-widest transition-colors">About Us</button>
+            <button onClick={() => nextStep('orders')} className="text-xs font-bold text-neutral-500 hover:text-cyan-400 uppercase tracking-widest transition-colors">My Orders</button>
             {['loveranger900@gmail.com', 'adarshray142@gmail.com', 'scam7737@gmail.com'].includes(user?.email || '') && (
                 <button onClick={() => nextStep('admin')} className="text-xs font-bold text-neutral-500 hover:text-cyan-400 uppercase tracking-widest transition-colors">Admin Panel</button>
             )}
@@ -793,6 +800,106 @@ export default function App() {
       <BasketPanel isOpen={isBasketOpen} onClose={() => setIsBasketOpen(false)} basket={basket} setBasket={setBasket} userEmail={user?.email || ''} />
     </div>
   );
+}
+
+function CustomerOrders({ userEmail }: { userEmail: string }) {
+  const [orders, setOrders] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!userEmail) return;
+    try {
+        const q = query(collection(db, 'orders'), where('customerEmail', '==', userEmail));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const fetchedOrders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            fetchedOrders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+            setOrders(fetchedOrders);
+        });
+        return () => unsubscribe();
+    } catch (error) {
+        console.error("Firestore Error: ", error);
+    }
+  }, [userEmail]);
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'pending': return 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20';
+      case 'in production': return 'text-fuchsia-400 bg-fuchsia-400/10 border-fuchsia-400/20';
+      case 'in delivery': return 'text-cyan-400 bg-cyan-400/10 border-cyan-400/20';
+      case 'delivered': return 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20';
+      default: return 'text-neutral-400 bg-neutral-400/10 border-neutral-400/20';
+    }
+  };
+
+  return (
+    <motion.section 
+      key="orders"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="max-w-4xl mx-auto w-full text-white"
+    >
+      <div className="flex items-center gap-4 mb-12 border-b border-white/10 pb-8">
+        <h1 className="text-5xl font-black uppercase italic tracking-tight">Your Orders</h1>
+      </div>
+
+      <div className="space-y-6">
+        {orders.map(order => (
+            <div key={order.id} className="bg-neutral-900 border border-white/10 rounded-3xl p-8 flex flex-col hover:border-white/20 transition-all">
+              <div className="flex justify-between items-start mb-6 border-b border-white/5 pb-6">
+                <div>
+                  <div className="flex items-center gap-2 mb-2 font-black text-xl uppercase tracking-widest text-neutral-300">
+                    Order <span className="text-cyan-400">#{order.id.slice(0, 6)}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-neutral-500 font-mono text-sm">
+                    <Calendar className="w-4 h-4" />
+                    {new Date(order.createdAt).toLocaleString()}
+                  </div>
+                </div>
+                
+                <div className={`px-4 py-2 border rounded-full text-xs font-black uppercase tracking-widest flex items-center gap-2 ${getStatusColor(order.status)}`}>
+                  {order.status === 'delivered' ? <CheckCircle2 className="w-4 h-4" /> : order.status === 'in delivery' ? <Truck className="w-4 h-4" /> : <div className="w-2 h-2 rounded-full bg-current animate-pulse" />}
+                  {order.status}
+                </div>
+              </div>
+
+              <div className="flex-1">
+                <div className="space-y-4 mb-6">
+                  {order.items?.map((item: any, i: number) => (
+                    <div key={i} className="flex justify-between items-center bg-black/40 rounded-2xl p-4">
+                      <div>
+                        <div className="font-black text-lg flex items-center gap-2">
+                           <span className="text-cyan-400">{item.quantity}x</span>
+                           {item.material?.name || 'Custom Bottle'}
+                        </div>
+                        <div className="text-sm text-neutral-400 mt-1 uppercase font-bold tracking-widest flex gap-2">
+                           <span>{item.customText || 'NO TEXT'}</span>
+                           <span className="text-neutral-600">•</span>
+                           <span>{item.bottleColor}</span>
+                        </div>
+                      </div>
+                      <div className="font-mono text-lg font-bold">
+                        ₹{item.totalPrice}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="pt-6 border-t border-white/5 flex justify-between items-center mt-auto">
+                <span className="font-black uppercase tracking-widest text-neutral-500">Order Total</span>
+                <span className="text-3xl font-black italic">₹{order.total}</span>
+              </div>
+            </div>
+        ))}
+
+        {orders.length === 0 && (
+          <div className="py-20 text-center border border-dashed border-white/10 rounded-3xl">
+            <Package className="w-16 h-16 text-neutral-600 mx-auto mb-4" />
+            <p className="text-neutral-500 font-bold uppercase tracking-widest">No order history found.</p>
+          </div>
+        )}
+      </div>
+    </motion.section>
+  )
 }
 
 function SummaryItem({ label, value }: { label: string, value: string }) {
@@ -867,8 +974,8 @@ function AuthScreen({ onGuest }: { onGuest: () => void }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#030014] text-white font-sans flex flex-col items-center justify-center p-6 relative">
-      <div className="absolute inset-0 pointer-events-none z-0">
+    <div className="min-h-[100dvh] bg-[#030014] text-white font-sans flex flex-col items-center justify-center p-4 sm:p-6 relative overflow-y-auto">
+      <div className="absolute inset-0 pointer-events-none z-0 fixed">
         <div className="absolute top-[20%] left-[20%] w-[40%] h-[40%] bg-cyan-900/10 blur-[120px] rounded-full" />
         <div className="absolute bottom-[20%] right-[20%] w-[50%] h-[50%] bg-purple-900/10 blur-[150px] rounded-full" />
       </div>
@@ -876,9 +983,9 @@ function AuthScreen({ onGuest }: { onGuest: () => void }) {
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md relative z-10 bg-white/5 border border-white/10 p-10 rounded-[48px] backdrop-blur-xl"
+        className="w-full max-w-md relative z-10 bg-white/5 border border-white/10 p-6 sm:p-10 rounded-3xl sm:rounded-[48px] backdrop-blur-xl my-auto"
       >
-        <div className="flex items-center justify-center gap-2 mb-10">
+        <div className="flex items-center justify-center gap-2 mb-6 sm:mb-10">
           <Box className="w-8 h-8 text-cyan-400" />
           <span className="font-display font-black text-3xl tracking-tighter uppercase italic">CUSTOM<span className="text-cyan-400">CAPS</span></span>
         </div>
@@ -886,7 +993,7 @@ function AuthScreen({ onGuest }: { onGuest: () => void }) {
         <h2 className="text-2xl font-black uppercase text-center mb-2 tracking-tight">
           {isLogin ? 'Access Lab' : 'Request Access'}
         </h2>
-        <p className="text-neutral-500 text-center text-sm font-bold uppercase tracking-widest mb-8">
+        <p className="text-neutral-500 text-center text-xs sm:text-sm font-bold uppercase tracking-widest mb-6 sm:mb-8">
           {isLogin ? 'Enter credentials to continue' : 'Create an account to begin'}
         </p>
 
@@ -896,7 +1003,7 @@ function AuthScreen({ onGuest }: { onGuest: () => void }) {
           </div>
         )}
 
-        <form onSubmit={handleAuth} className="space-y-6">
+        <form onSubmit={handleAuth} className="space-y-4 sm:space-y-6">
           <div className="relative">
             <Mail className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500" />
             <input 
