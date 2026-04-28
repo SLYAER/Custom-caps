@@ -28,11 +28,16 @@ export function AdminPanel() {
     }
   }, []);
 
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
+    setUpdatingId(orderId);
     try {
       await updateDoc(doc(db, 'orders', orderId), { status: newStatus });
+      setTimeout(() => setUpdatingId(null), 1000);
     } catch (error) {
       console.error("Failed to update order status", error);
+      setUpdatingId(null);
     }
   };
 
@@ -126,21 +131,29 @@ export function AdminPanel() {
                   </div>
                 </div>
                 
-                <div className="flex flex-col items-end gap-3">
+                <div className="flex flex-col items-end gap-3 relative">
                   <div className={`px-4 py-2 border rounded-full text-xs font-black uppercase tracking-widest flex items-center gap-2 ${getStatusColor(order.status)}`}>
                     {order.status === 'delivered' ? <CheckCircle2 className="w-4 h-4" /> : order.status === 'in delivery' ? <Truck className="w-4 h-4" /> : <div className="w-2 h-2 rounded-full bg-current animate-pulse" />}
                     {order.status}
                   </div>
                   
-                  <select 
-                    value={order.status}
-                    onChange={(e) => updateOrderStatus(order.id, e.target.value)}
-                    className="bg-black/50 border border-white/10 rounded-xl py-2 px-3 text-xs font-bold text-white focus:outline-none focus:border-cyan-400 transition-all outline-none cursor-pointer hover:bg-white/5 appearance-none"
-                  >
-                    {STATUS_OPTIONS.map(opt => (
-                      <option key={opt} value={opt} className="bg-neutral-900 text-white">{opt.toUpperCase()}</option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <select 
+                      value={order.status}
+                      onChange={(e) => updateOrderStatus(order.id, e.target.value)}
+                      disabled={updatingId === order.id}
+                      className="bg-black/50 border border-white/10 rounded-xl py-2 px-3 text-xs font-bold text-white focus:outline-none focus:border-cyan-400 transition-all outline-none cursor-pointer hover:bg-white/5 appearance-none disabled:opacity-50"
+                    >
+                      {STATUS_OPTIONS.map(opt => (
+                        <option key={opt} value={opt} className="bg-neutral-900 text-white">{opt.toUpperCase()}</option>
+                      ))}
+                    </select>
+                    {updatingId === order.id && (
+                      <div className="absolute -top-6 right-0 text-cyan-400 text-[10px] uppercase font-black tracking-widest whitespace-nowrap animate-pulse">
+                         Saved!
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 

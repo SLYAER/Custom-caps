@@ -42,7 +42,8 @@ export function BasketPanel({ isOpen, onClose, basket, setBasket, userEmail, onC
     setBasket(basket.filter(i => !(i.material.id === item.material.id && i.customText === item.customText)));
   };
 
-  async function handleOrderConfirmation() {
+  async function handleOrderConfirmation(e: React.FormEvent) {
+    e.preventDefault();
     setError('');
     if (basket.length > 0) {
       try {
@@ -178,7 +179,7 @@ export function BasketPanel({ isOpen, onClose, basket, setBasket, userEmail, onC
                             <Mail className="w-5 h-5 text-cyan-400" />
                             <span className="font-bold text-sm uppercase tracking-widest text-neutral-300">Tracking Email</span>
                           </div>
-                          <div className="flex flex-col gap-4">
+                          <form onSubmit={handleOrderConfirmation} className="flex flex-col gap-4">
                             <input 
                               type="email"
                               value={email}
@@ -188,13 +189,12 @@ export function BasketPanel({ isOpen, onClose, basket, setBasket, userEmail, onC
                               required
                             />
                             <button 
-                              type="button"
-                              onClick={handleOrderConfirmation}
+                              type="submit"
                               className="w-full bg-cyan-500 hover:bg-cyan-400 text-black py-4 rounded-2xl font-black text-sm uppercase tracking-widest transition-all"
                             >
-                              Confirm Order Updates
+                              Confirm Order
                             </button>
-                          </div>
+                          </form>
                       </div>
                     ) : (
                         <button 
