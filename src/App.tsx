@@ -26,7 +26,7 @@ import { useState, useRef, useEffect } from 'react';
 
 import { Canvas } from '@react-three/fiber';
 import { StarfieldBackground } from './components/Starfield';
-import { auth } from './lib/firebase';
+import { auth, db } from './lib/firebase';
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
@@ -34,6 +34,7 @@ import {
   signOut,
   User
 } from 'firebase/auth';
+import { collection, addDoc } from 'firebase/firestore';
 
 import { Bottle3DPreview } from './Bottle3D';
 import { processAndCropImage } from './lib/imageUtils';
@@ -78,6 +79,7 @@ type Step = 'material' | 'occasion' | 'design' | 'review' | 'checkout' | 'about'
 // --- Realistic Preview Component ---
 import { AboutPage } from './About';
 import { AdminPanel } from './AdminPanel';
+import { BasketPanel } from './components/BasketPanel';
 function BottleRealisticPreview({ selection }: { selection: any }) {
   const isGlass = selection.material.id === 'glass';
   const isMetal = selection.material.id === 'stainless';
@@ -259,6 +261,7 @@ export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [currentStep, setCurrentStep] = useState<Step>('material');
+  const [isBasketOpen, setIsBasketOpen] = useState(false);
   const [basket, setBasket] = useState<any[]>([]);
   const [selection, setSelection] = useState({
     material: MATERIALS[0],
@@ -328,7 +331,7 @@ export default function App() {
       <nav className="fixed top-0 w-full z-50 glass-dark border-b border-white/5 py-4">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
           <div className="flex items-center gap-2">
-            <button className="flex items-center gap-1 text-xs font-bold text-neutral-500 hover:text-cyan-400 transition-colors">
+            <button onClick={() => setIsBasketOpen(true)} className="flex items-center gap-1 text-xs font-bold text-neutral-500 hover:text-cyan-400 transition-colors">
                  <ShoppingBag className="w-4 h-4" /> ({basket.length})
             </button>
             <Box className="w-8 h-8 text-cyan-400" />
@@ -757,12 +760,23 @@ export default function App() {
                            <span className="text-neutral-400 font-bold">Total Investment</span>
                            <span className="text-4xl font-black italic">₹{calculatePrice(selection)}</span>
                         </div>
-                        <button 
-                           onClick={() => nextStep('checkout')}
-                           className="w-full bg-white text-black py-6 rounded-[32px] font-black text-2xl uppercase italic hover:bg-cyan-50 transition-all flex items-center justify-center gap-4"
-                        >
-                           Secure Checkout <CreditCard className="w-6 h-6" />
-                        </button>
+                        <div className="flex gap-4">
+                           <button 
+                             onClick={() => {
+                                 setBasket([...basket, { ...selection, price: calculatePrice(selection) }]);
+                                 setIsBasketOpen(true);
+                             }}
+                             className="flex-1 bg-white/5 border border-white/10 text-white py-6 rounded-[32px] font-black text-2xl uppercase italic hover:bg-white/10 transition-all flex items-center justify-center gap-4"
+                           >
+                              Add to Basket
+                           </button>
+                           <button 
+                              onClick={() => nextStep('checkout')}
+                              className="flex-1 bg-white text-black py-6 rounded-[32px] font-black text-2xl uppercase italic hover:bg-cyan-50 transition-all flex items-center justify-center gap-4"
+                           >
+                              Checkout <CreditCard className="w-6 h-6" />
+                           </button>
+                        </div>
                       </div>
                    </div>
                 </div>
@@ -770,7 +784,7 @@ export default function App() {
           )}
 
           {currentStep === 'checkout' && (
-            <CheckoutStep userEmail={user?.email || ''} />
+            <CheckoutStep userEmail={user?.email || ''} basket={basket} setBasket={setBasket} />
           )}
 
           {currentStep === 'about' && (
@@ -793,6 +807,7 @@ export default function App() {
             )}
          </div>
       </footer>
+      <BasketPanel isOpen={isBasketOpen} onClose={() => setIsBasketOpen(false)} basket={basket} setBasket={setBasket} nextStep={nextStep} />
     </div>
   );
 }
@@ -806,9 +821,29 @@ function SummaryItem({ label, value }: { label: string, value: string }) {
   );
 }
 
-function CheckoutStep({ userEmail }: { userEmail: string }) {
+function CheckoutStep({ userEmail, basket, setBasket }: { userEmail: string, basket: any[], setBasket: any }) {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [email, setEmail] = useState(userEmail);
+
+  useEffect(() => {
+    if (basket.length > 0) {
+      const saveOrder = async () => {
+        try {
+          await addDoc(collection(db, 'orders'), {
+            customerEmail: userEmail,
+            items: basket,
+            total: basket.reduce((sum: number, item: any) => sum + item.price, 0),
+            status: 'pending',
+            createdAt: new Date().toISOString()
+          });
+          setBasket([]); // Clear basket after saving
+        } catch (error) {
+          console.error("Error saving order:", error);
+        }
+      };
+      saveOrder();
+    }
+  }, [basket, userEmail, setBasket]);
 
   return (
     <motion.section 
