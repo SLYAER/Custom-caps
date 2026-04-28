@@ -278,15 +278,16 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(true);
   const [currentStep, setCurrentStep] = useState<Step>('material');
   const [isBasketOpen, setIsBasketOpen] = useState(false);
-  const [showMockingPopup, setShowMockingPopup] = useState(false);
+  const [showMockingPopup, setShowMockingPopup] = useState(() => {
+    return localStorage.getItem('showMockingPopup') === 'true';
+  });
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isGuest, setIsGuest] = useState(false);
   const [basket, setBasket] = useState<any[]>([]);
   
   const handleCheckoutComplete = () => {
-    setTimeout(() => {
-      setShowMockingPopup(true);
-    }, 60000); // 1 minute
+    localStorage.setItem('showMockingPopup', 'true');
+    setShowMockingPopup(true);
   };
   const [selection, setSelection] = useState({
     material: MATERIALS[0],
