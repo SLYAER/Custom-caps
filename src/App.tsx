@@ -32,7 +32,8 @@ import {
   createUserWithEmailAndPassword, 
   onAuthStateChanged,
   signOut,
-  User
+  User,
+  sendPasswordResetEmail
 } from 'firebase/auth';
 import { collection, addDoc } from 'firebase/firestore';
 
@@ -1045,6 +1046,28 @@ function AuthScreen({ onGuest }: { onGuest: () => void }) {
           >
             {isLogin ? "Don't have access? Apply here." : "Already have access? Log in."}
           </button>
+          {isLogin && (
+            <div className="mt-4">
+              <button 
+                type="button"
+                onClick={async () => {
+                  if (!email) {
+                    setError('Please enter your email address first.');
+                    return;
+                  }
+                  try {
+                    await sendPasswordResetEmail(auth, email);
+                    alert('Password reset email sent. Please check your inbox.');
+                  } catch (err: any) {
+                    setError(err.message);
+                  }
+                }}
+                className="text-xs font-bold uppercase tracking-widest text-neutral-500 hover:text-cyan-400 transition-colors"
+              >
+                Forgot Password?
+              </button>
+            </div>
+          )}
         </div>
       </motion.div>
     </div>
