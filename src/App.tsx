@@ -262,6 +262,7 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(true);
   const [currentStep, setCurrentStep] = useState<Step>('material');
   const [isBasketOpen, setIsBasketOpen] = useState(false);
+  const [isGuest, setIsGuest] = useState(false);
   const [basket, setBasket] = useState<any[]>([]);
   const [selection, setSelection] = useState({
     material: MATERIALS[0],
@@ -315,8 +316,8 @@ export default function App() {
     </div>
   );
 
-  if (!user) {
-    return <AuthScreen />;
+  if (!user && !isGuest) {
+    return <AuthScreen onGuest={() => setIsGuest(true)} />;
   }
 
   return (
@@ -331,32 +332,22 @@ export default function App() {
       <nav className="fixed top-0 w-full z-50 glass-dark border-b border-white/5 py-4">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
           <div className="flex items-center gap-2">
-            <button onClick={() => setIsBasketOpen(true)} className="flex items-center gap-1 text-xs font-bold text-neutral-500 hover:text-cyan-400 transition-colors">
-                 <ShoppingBag className="w-4 h-4" /> ({basket.length})
-            </button>
-            {user && (
-                <button onClick={() => signOut(auth)} className="text-xs font-bold text-neutral-500 hover:text-red-400 transition-colors">
-                  Logout
-                </button>
-            )}
             <Box className="w-8 h-8 text-cyan-400" />
             <span className="font-display font-black text-2xl tracking-tighter">CUSTOM<span className="text-cyan-400">CAPS</span></span>
           </div>
           
           <div className="flex gap-4 items-center">
-            <button 
-              onClick={() => {
-                try {
-                  localStorage.removeItem('sips_preview_email');
-                  localStorage.removeItem('sips_preview_pass');
-                } catch {}
-                signOut(auth);
-              }}
-              className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-neutral-500 hover:text-red-400 transition-colors mr-2"
-            >
-              <LogOut className="w-3 h-3" />
+             <button onClick={() => setIsBasketOpen(true)} className="flex items-center gap-2 bg-white/5 px-4 py-2 rounded-xl text-neutral-400 hover:text-white transition-all text-sm font-bold">
+               <ShoppingBag className="w-4 h-4" />
+               <span>₹{basket.reduce((sum, item) => sum + item.price, 0)}</span>
+               <span className="bg-black/50 px-2 py-0.5 rounded-full text-xs">({basket.length})</span>
             </button>
-            <div className="hidden md:flex gap-1 text-[10px] font-bold tracking-widest uppercase text-neutral-500 mr-8">
+            {user && (
+                <button onClick={() => { signOut(auth); setIsGuest(false); }} className="text-xs font-bold text-neutral-500 hover:text-red-400 transition-colors">
+                  Logout
+                </button>
+            )}
+            <div className="hidden md:flex gap-1 text-[10px] font-bold tracking-widest uppercase text-neutral-500 ml-8">
               {['material', 'occasion', 'design', 'review'].map((s, i) => (
                 <div key={s} className="flex items-center gap-2">
                   <span className={`${currentStep === s ? 'text-cyan-400' : 'text-neutral-500'}`}>{s}</span>
@@ -364,10 +355,6 @@ export default function App() {
                 </div>
               ))}
             </div>
-            <button className="flex items-center gap-2 bg-white/5 px-4 py-2 rounded-xl text-neutral-400 hover:text-white transition-all text-sm font-bold">
-              <ShoppingBag className="w-4 h-4" />
-              <span>₹0.00</span>
-            </button>
           </div>
         </div>
       </nav>
@@ -916,7 +903,7 @@ function CheckoutStep({ userEmail, basket, setBasket }: { userEmail: string, bas
   );
 }
 
-function AuthScreen() {
+function AuthScreen({ onGuest }: { onGuest: () => void }) {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState(() => {
     try { return localStorage.getItem('sips_preview_email') || ''; } catch { return ''; }
@@ -1039,6 +1026,14 @@ function AuthScreen() {
             className="w-full bg-cyan-500 hover:bg-cyan-400 text-black py-4 rounded-2xl font-black text-lg flex items-center justify-center gap-2 transition-all disabled:opacity-50 uppercase italic"
           >
             {loading ? <Loader2 className="w-6 h-6 animate-spin text-black/50" /> : (isLogin ? 'Initialize Session' : 'Create Account')}
+          </button>
+          
+          <button 
+            type="button"
+            onClick={onGuest}
+            className="w-full bg-white/5 hover:bg-white/10 text-white py-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all uppercase tracking-widest"
+          >
+            Continue as Guest
           </button>
         </form>
 
