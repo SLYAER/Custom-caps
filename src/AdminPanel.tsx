@@ -1,13 +1,16 @@
 import { useState, useEffect } from 'react';
 import { db } from './lib/firebase';
 import { collection, updateDoc, doc, onSnapshot } from 'firebase/firestore';
-import { motion } from 'framer-motion';
-import { Package, Clock, DollarSign, CircleUser, ChevronDown, CheckCircle2, Truck } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Package, Clock, DollarSign, CircleUser, ChevronDown, CheckCircle2, Truck, Eye, X } from 'lucide-react';
+import { Canvas } from '@react-three/fiber';
+import { Bottle3DPreview } from './Bottle3D';
 
 const STATUS_OPTIONS = ['pending', 'in production', 'in delivery', 'delivered'];
 
 export function AdminPanel() {
   const [orders, setOrders] = useState<any[]>([]);
+  const [previewItem, setPreviewItem] = useState<any>(null);
 
   useEffect(() => {
     try {
@@ -106,8 +109,11 @@ export function AdminPanel() {
                            <span>{item.bottleColor}</span>
                         </div>
                       </div>
-                      <div className="font-mono text-lg font-bold">
-                        ₹{item.totalPrice}
+                      <div className="font-mono text-lg font-bold flex flex-col items-end gap-2">
+                        <span>₹{item.totalPrice}</span>
+                        <button onClick={() => setPreviewItem(item)} className="px-3 py-1 bg-white/10 text-[10px] font-bold uppercase tracking-widest rounded-xl hover:bg-white/20 transition-colors flex items-center gap-2">
+                          <Eye className="w-3 h-3" /> View Design
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -128,6 +134,40 @@ export function AdminPanel() {
           )}
         </div>
       </section>
+
+      <AnimatePresence>
+        {previewItem && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-xl flex flex-col items-center justify-center p-4"
+          >
+            <button onClick={() => setPreviewItem(null)} className="absolute top-4 sm:top-8 right-4 sm:right-8 text-white p-3 bg-white/10 hover:bg-white/20 rounded-full transition-colors flex items-center gap-2">
+              <X className="w-6 h-6" /> <span className="font-bold uppercase tracking-widest text-xs hidden sm:inline">Close</span>
+            </button>
+            
+            <div className="h-[60vh] w-full max-w-lg relative bg-transparent rounded-3xl overflow-hidden cursor-move">
+              <Canvas camera={{ position: [0, 0, 10], fov: 45 }}>
+                  <ambientLight intensity={0.8} />
+                  <directionalLight position={[5, 10, 5]} intensity={1.5} />
+                  <directionalLight position={[-5, 5, -5]} intensity={0.5} />
+                  <Bottle3DPreview selection={previewItem} setSelection={() => {}} />
+              </Canvas>
+            </div>
+            
+            <div className="mt-8 text-center bg-white/5 p-6 rounded-3xl border border-white/10 backdrop-blur-md">
+              <h3 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-white mb-2">{previewItem.material?.name || 'Custom Bottle'}</h3>
+              <div className="flex flex-wrap items-center justify-center gap-3 text-neutral-400 mt-2 uppercase font-bold tracking-widest text-xs sm:text-sm">
+                 <span className="bg-black/40 px-3 py-1 rounded-full text-cyan-400">Text: {previewItem.customText || 'NO TEXT'}</span>
+                 <span className="bg-black/40 px-3 py-1 rounded-full">{previewItem.size || '500ml'}</span>
+                 <span className="bg-black/40 px-3 py-1 rounded-full">{previewItem.shape || 'Standard'} Shape</span>
+              </div>
+              <p className="text-neutral-500 text-[10px] uppercase font-black tracking-[0.2em] mt-6">Drag to rotate • Scroll to zoom</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }

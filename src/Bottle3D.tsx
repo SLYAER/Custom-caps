@@ -63,7 +63,9 @@ function LogoDecal({ url, scale = 1, positionY = 0, radius = 1 }: { url: string,
     canvas.height = 1024;
     
     const img = new Image();
-    img.crossOrigin = "anonymous";
+    if (!url.startsWith('data:')) {
+      img.crossOrigin = "anonymous";
+    }
     img.src = url;
     img.onload = () => {
       const ctx = canvas.getContext('2d');
