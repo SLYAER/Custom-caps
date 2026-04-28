@@ -1,10 +1,53 @@
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Environment, Decal, ContactShadows } from '@react-three/drei';
-import { TextureLoader, Texture } from 'three';
-import { useEffect, useState, useMemo } from 'react';
+import { Texture } from 'three';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import * as THREE from 'three';
+import { useDrag } from '@use-gesture/react';
 
 // 1. Utilities for Decals
+
+function DragScaleWrapper({ isMoveEnabled, setControlsEnabled, onUpdate, children }: { isMoveEnabled: boolean, setControlsEnabled: any, onUpdate: any, children: any }) {
+  const [active, setActive] = useState(false);
+  const lastY = useRef(0);
+  const lastX = useRef(0);
+
+  return (
+    <group
+      onPointerDown={(e) => {
+        if (!isMoveEnabled) return;        
+        e.stopPropagation();
+        setActive(true);
+        lastY.current = e.clientY;
+        lastX.current = e.clientX;
+        setControlsEnabled(false);
+        (e.target as any).setPointerCapture(e.pointerId);
+      }}
+      onPointerUp={(e) => {
+        e.stopPropagation();
+        setActive(false);
+        setControlsEnabled(true);
+        (e.target as any).releasePointerCapture(e.pointerId);
+      }}
+      onPointerMove={(e) => {
+        if (!active) return;
+        e.stopPropagation();
+        const delta = e.clientY - lastY.current;
+        const deltaX = e.clientX - lastX.current;
+        lastY.current = e.clientY;
+        lastX.current = e.clientX;
+        onUpdate({ deltaY: -delta * 0.02, deltaX: deltaX * 0.02 });
+      }}
+      onWheel={(e) => {
+        e.stopPropagation();
+        const scaleChange = e.deltaY > 0 ? -0.05 : 0.05;
+        onUpdate({ deltaScale: scaleChange });
+      }}
+    >
+      {children}
+    </group>
+  );
+}
 
 function LogoDecal({ url, scale = 1, positionY = 0, radius = 1 }: { url: string, scale?: number, positionY?: number, radius?: number }) {
   const [texture, setTexture] = useState<Texture | null>(null);
@@ -30,6 +73,7 @@ function LogoDecal({ url, scale = 1, positionY = 0, radius = 1 }: { url: string,
       position={[0, positionY, radius]} 
       rotation={[0, 0, 0]}
       scale={[radius * 2 * scale, radius * 2 * scale, radius * 8]}
+      renderOrder={1}
     >
       <meshStandardMaterial 
         map={texture} 
@@ -39,13 +83,14 @@ function LogoDecal({ url, scale = 1, positionY = 0, radius = 1 }: { url: string,
         polygonOffset={true}
         polygonOffsetFactor={-10}
         color="#ffffff"
-        roughness={0.2}
+        roughness={0.6}
+        metalness={0.1}
       />
     </Decal>
   );
 }
 
-function TextDecal({ text, color, scale = 1, positionY = 0, radius = 1, font = 'Inter' }: { text: string; color: string; scale?: number, positionY?: number, radius?: number, font?: string }) {
+function TextDecal({ text, color, scale = 1, positionY = 0, radius = 1, font = 'Inter', rotation = 0 }: { text: string; color: string; scale?: number, positionY?: number, radius?: number, font?: string, rotation?: number }) {
   const [texture, setTexture] = useState<THREE.CanvasTexture | null>(null);
   const [aspect, setAspect] = useState(1);
 
@@ -74,8 +119,12 @@ function TextDecal({ text, color, scale = 1, positionY = 0, radius = 1, font = '
       
       ctx.font = `bold ${fontSize}px ${font}, sans-serif`;
       
+      ctx.save();
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.rotate(rotation);
       // We'll use a maximum width so long text squeezes nicely to wrap the bottle
-      ctx.fillText(text, canvas.width / 2, canvas.height / 2, canvas.width - 40);
+      ctx.fillText(text, 0, 0, (rotation ? canvas.height : canvas.width) - 40);
+      ctx.restore();
       
       const tex = new THREE.CanvasTexture(canvas);
       tex.colorSpace = THREE.SRGBColorSpace;
@@ -86,7 +135,7 @@ function TextDecal({ text, color, scale = 1, positionY = 0, radius = 1, font = '
       setAspect(canvas.height / canvas.width);
       setTexture(tex);
     }
-  }, [text, color, font]);
+  }, [text, color, font, rotation, scale]);
 
   if (!texture) return null;
 
@@ -96,7 +145,7 @@ function TextDecal({ text, color, scale = 1, positionY = 0, radius = 1, font = '
   const cylinderHeight = circumference * aspect * 3.0;
 
   return (
-    <mesh position={[0, positionY, 0]} rotation={[0, Math.PI, 0]}>
+    <mesh position={[0, positionY, 0]} rotation={[0, Math.PI, 0]} renderOrder={1}>
       <cylinderGeometry args={[radius + 0.005, radius + 0.005, cylinderHeight, 64, 1, true]} />
       <meshStandardMaterial 
         map={texture} 
@@ -106,11 +155,68 @@ function TextDecal({ text, color, scale = 1, positionY = 0, radius = 1, font = '
         polygonOffset={true}
         polygonOffsetFactor={-4}
         color="#ffffff"
-        roughness={0.2}
+        roughness={0.6}
+        metalness={0.1}
         side={THREE.DoubleSide}
       />
     </mesh>
   );
+}
+
+
+function generateOccasionTexture(occasion: string, color: string) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1024;
+  canvas.height = 1024;
+  const ctx = canvas.getContext('2d')!;
+  ctx.clearRect(0, 0, 1024, 1024);
+
+  // Base color
+  ctx.fillStyle = color;
+  ctx.fillRect(0, 0, 1024, 1024);
+
+  // Pattern logic
+  if (occasion === 'birthday') {
+    // Confetti
+    for (let i = 0; i < 400; i++) {
+      ctx.fillStyle = `hsl(${Math.random() * 360}, 80%, 60%)`;
+      const x = Math.random() * 1024;
+      const y = Math.random() * 1024;
+      ctx.beginPath();
+      ctx.arc(x, y, Math.random() * 15 + 5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  } else if (occasion === 'wedding') {
+    // Elegant circles
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 15;
+    for(let i=0; i<40; i++) {
+        ctx.beginPath();
+        const x = Math.random()*1024;
+        const y = Math.random()*1024;
+        ctx.arc(x, y, 40, 0, Math.PI*2);
+        ctx.stroke();
+    }
+  } else if (occasion === 'corporate') {
+    // Geometric lines
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 30;
+    for(let i=0; i<10; i++) {
+        ctx.strokeRect(i*150, i*100, 300, 300);
+    }
+  } else if (occasion === 'sports') {
+      // Stripes
+      ctx.fillStyle = 'rgba(255,255,255,0.3)';
+      for(let i=0; i<20; i++) {
+          ctx.fillRect(0, i*150, 1024, 50);
+      }
+  }
+  
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.wrapT = THREE.RepeatWrapping;
+  return tex;
 }
 
 // 2. Geometries
@@ -193,16 +299,7 @@ const getPlasticPoints = () => {
 
 // 3. Main Component
 
-function RealisticBottle({ selection, material, color, capColor, customText, textColor, logo }: any) {
-  const { pts, cap, glassMat, metalMat, plasticMat } = useMemo(() => {
-    return {
-      borosilPts: getBorosilPoints(),
-      miltonPts: getMiltonPoints(),
-      glassPts: getGlassPoints(),
-      plasticPts: getPlasticPoints(),
-    }
-  }, []);
-
+function RealisticBottle({ selection, setSelection, setControlsEnabled, material, color, capColor, customText, textColor, logo, isMoveEnabled }: any) {
   const glassMaterialProps = {
       color: color === '#ffffff' ? '#fafafa' : color, transmission: 0.95, opacity: 1, metalness: 0,
       roughness: 0.1, ior: 1.52, thickness: 1.5, clearcoat: 1, clearcoatRoughness: 0.1, envMapIntensity: 2, transparent: true,
@@ -216,29 +313,33 @@ function RealisticBottle({ selection, material, color, capColor, customText, tex
   };
 
   const isStainless = material === 'stainless'; // Borosil
-  const isTitanium = material === 'titanium'; // Milton
   const isGlass = material === 'glass';
   const isPlastic = material === 'plastic';
 
+  const occasionTexture = useMemo(() => {
+    if (selection.occasion.id === 'minimal') return null;
+    return generateOccasionTexture(selection.occasion.id, selection.bottleColor);
+  }, [selection.occasion.id, selection.bottleColor]);
+
   let currentPoints = getBorosilPoints();
-  let materialProps = metalMaterialProps;
+  let materialProps = { ...metalMaterialProps, map: occasionTexture };
+  let glassProps = { ...glassMaterialProps, map: occasionTexture };
+  let plasticProps = { ...plasticMaterialProps, map: occasionTexture }; 
   let decalRadius = 1;
   let decalCenter = 2.4;
 
-  if (isTitanium) {
-    currentPoints = getMiltonPoints();
-    decalRadius = 0.85;
-    decalCenter = 2.0;
-  } else if (isGlass) {
+  if (isGlass) {
     currentPoints = getGlassPoints();
-    materialProps = glassMaterialProps;
+    materialProps = glassProps;
     decalRadius = 0.9;
     decalCenter = 2.0;
   } else if (isPlastic) {
     currentPoints = getPlasticPoints();
-    materialProps = plasticMaterialProps;
+    materialProps = plasticProps;
     decalRadius = 0.9;
     decalCenter = 1.9;
+  } else {
+    materialProps = { ...metalMaterialProps, map: occasionTexture };
   }
 
   return (
@@ -246,13 +347,52 @@ function RealisticBottle({ selection, material, color, capColor, customText, tex
       {/* Bottle Body */}
       <mesh>
         <latheGeometry args={[currentPoints, 64]} />
-        {isGlass && <meshPhysicalMaterial {...glassMaterialProps} />}
-        {(isStainless || isTitanium) && <meshPhysicalMaterial {...metalMaterialProps} />}
-        {isPlastic && <meshPhysicalMaterial {...plasticMaterialProps} />}
+        {isGlass && <meshPhysicalMaterial {...glassProps} />}
+        {isStainless && <meshPhysicalMaterial {...materialProps} />}
+        {isPlastic && <meshPhysicalMaterial {...plasticProps} />}
+
 
         {/* Decals aligned to center of lathe */}
-        {customText && <TextDecal text={customText} color={textColor} radius={decalRadius} font={selection.textFont} scale={selection.textScale} positionY={decalCenter + (selection.textPosition * 1.5)} />}
-        {logo && <LogoDecal url={logo} radius={decalRadius} scale={selection.logoScale} positionY={decalCenter + (selection.logoPosition * 1.5)} />}
+        {customText && (
+          <DragScaleWrapper
+            isMoveEnabled={isMoveEnabled}
+            setControlsEnabled={setControlsEnabled}
+            onUpdate={({ deltaY, deltaX, deltaScale }: any) => {
+              if (setSelection) {
+                setSelection((prev: any) => ({
+                  ...prev,
+                  textPosition: prev.textPosition + (deltaY || 0),
+                  textRotationX: prev.textRotationX + (deltaX || 0),
+                  textScale: Math.max(0.2, Math.min(3, prev.textScale + (deltaScale || 0)))
+                }));
+              }
+            }}
+          >
+            <group rotation={[0, selection.textRotationX || 0, 0]}>
+              <TextDecal text={customText} color={textColor} radius={decalRadius} font={selection.textFont} scale={selection.textScale} positionY={decalCenter + (selection.textPosition * 1.5)} rotation={selection.textRotationZ || 0} />
+            </group>
+          </DragScaleWrapper>
+        )}
+        {logo && (
+          <DragScaleWrapper
+            isMoveEnabled={isMoveEnabled}
+            setControlsEnabled={setControlsEnabled}
+            onUpdate={({ deltaY, deltaX, deltaScale }: any) => {
+              if (setSelection) {
+                setSelection((prev: any) => ({
+                  ...prev,
+                  logoPosition: prev.logoPosition + (deltaY || 0),
+                  logoRotationX: prev.logoRotationX + (deltaX || 0),
+                  logoScale: Math.max(0.2, Math.min(3, prev.logoScale + (deltaScale || 0)))
+                }));
+              }
+            }}
+          >
+            <group rotation={[0, selection.logoRotationX || 0, 0]}>
+              <LogoDecal url={logo} radius={decalRadius} scale={selection.logoScale} positionY={decalCenter + (selection.logoPosition * 1.5)} />
+            </group>
+          </DragScaleWrapper>
+        )}
       </mesh>
 
       {/* Caps based on type */}
@@ -271,26 +411,6 @@ function RealisticBottle({ selection, material, color, capColor, customText, tex
               <torusGeometry args={[1.0, 0.02, 16, 64, Math.PI]} />
               <meshStandardMaterial color={capColor || "#1a1a1a"} roughness={0.8} />
            </mesh>
-        </group>
-      )}
-
-      {isTitanium && (
-        <group position={[0, 3.95, 0]}>
-           <mesh position={[0, 0.35, 0]}>
-              <cylinderGeometry args={[0.35, 0.35, 0.7, 32]} />
-              <meshPhysicalMaterial {...metalMaterialProps} color={capColor || "#eeeeee"} />
-           </mesh>
-           <mesh position={[0, 0.7, 0]}>
-              <sphereGeometry args={[0.35, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2]} />
-              <meshPhysicalMaterial {...metalMaterialProps} color={capColor || "#eeeeee"} />
-           </mesh>
-           {/* Ribbed grips */}
-           {[...Array(12)].map((_, i) => (
-             <mesh key={i} position={[Math.cos((i/12)*Math.PI*2)*0.35, 0.5, Math.sin((i/12)*Math.PI*2)*0.35]}>
-                <cylinderGeometry args={[0.02, 0.02, 0.4, 8]} />
-                <meshPhysicalMaterial {...metalMaterialProps} color={capColor || "#cccccc"} />
-             </mesh>
-           ))}
         </group>
       )}
 
@@ -319,12 +439,16 @@ function RealisticBottle({ selection, material, color, capColor, customText, tex
   );
 }
 
-export function Bottle3DPreview({ selection }: { selection: any }) {
+export function Bottle3DPreview({ selection, setSelection }: { selection: any, setSelection?: (s: any) => void }) {
+  const [controlsEnabled, setControlsEnabled] = useState(true);
+
   return (
     <div className="w-full h-full relative cursor-grab active:cursor-grabbing">
       <Canvas 
+        style={{ width: '100%', height: '100%' }}
         camera={{ position: [0, 0, 10], fov: 45 }} 
-        gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.2 }}
+        gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.2, powerPreference: "high-performance" }}
+        dpr={[1, 2.5]} // Setting up to 2.5 dpr for 4K quality feels
       >
         <ambientLight intensity={0.4} />
         <directionalLight position={[10, 10, 5]} intensity={1.5} color="#ffffff" castShadow />
@@ -336,12 +460,15 @@ export function Bottle3DPreview({ selection }: { selection: any }) {
         <group position={[0, 0, 0]}>
            <RealisticBottle 
               selection={selection}
+              setSelection={setSelection}
+              setControlsEnabled={setControlsEnabled}
               material={selection.material.id} 
               color={selection.bottleColor}
               capColor={selection.capColor} 
               customText={selection.customText} 
               textColor={selection.textColor} 
-              logo={selection.logo} 
+              logo={selection.logo}
+              isMoveEnabled={selection.isMoveEnabled}
            />
            <ContactShadows 
               position={[0, -2.5, 0]} 
@@ -353,6 +480,7 @@ export function Bottle3DPreview({ selection }: { selection: any }) {
         </group>
 
         <OrbitControls 
+          enabled={controlsEnabled}
           enablePan={false}
           enableZoom={true}
           minDistance={5}

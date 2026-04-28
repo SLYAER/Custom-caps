@@ -19,9 +19,13 @@ import {
   LogOut,
   Mail,
   Lock,
-  Loader2
+  Loader2,
+  RotateCw
 } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
+
+import { Canvas } from '@react-three/fiber';
+import { StarfieldBackground } from './components/Starfield';
 import { auth } from './lib/firebase';
 import { 
   signInWithEmailAndPassword, 
@@ -37,15 +41,15 @@ const MATERIALS = [
   { id: 'glass', name: 'Premium Glass', price: '₹30', icon: <Droplets className="w-6 h-6 text-blue-400" />, desc: 'Crystal clear, eco-friendly & durable.' },
   { id: 'stainless', name: 'Borosil Cylindrical', price: '₹199', icon: <Layers className="w-6 h-6 text-neutral-400" />, desc: 'Matte finish with a carry strap ring.' },
   { id: 'plastic', name: 'Sports Plastic', price: '₹20', icon: <Box className="w-6 h-6 text-emerald-400" />, desc: 'Lightweight & perfect for sports.' },
-  { id: 'titanium', name: 'Milton Cola Shape', price: '₹399', icon: <Sparkles className="w-6 h-6 text-purple-400" />, desc: 'Classic cola curve insulated design.' },
 ];
 
+
 const OCCASIONS = [
-  { id: 'birthday', name: 'Birthday Bash', desc: 'Party themes & age decals' },
-  { id: 'wedding', name: 'Wedding Favors', desc: 'Elegant script & dates' },
-  { id: 'corporate', name: 'Corporate Gift', desc: 'Minimal branding & logos' },
-  { id: 'sports', name: 'Athletics', desc: 'Performance tracking & names' },
-  { id: 'minimal', name: 'Minimalist', desc: 'Pure design, no theme' },
+  { id: 'birthday', name: 'Birthday Bash', desc: 'Party themes & age decals', defaultText: 'HAPPY BIRTHDAY', defaultColor: '#EC4899', symbol: '🎂' },
+  { id: 'wedding', name: 'Wedding Favors', desc: 'Elegant script & dates', defaultText: 'SAVE THE DATE', defaultColor: '#8B5CF6', symbol: '💍' },
+  { id: 'corporate', name: 'Corporate Gift', desc: 'Minimal branding & logos', defaultText: 'YOUR BRAND', defaultColor: '#3B82F6', symbol: '🏢' },
+  { id: 'sports', name: 'Athletics', desc: 'Performance tracking & names', defaultText: 'CHAMPION', defaultColor: '#EF4444', symbol: '🏆' },
+  { id: 'minimal', name: 'Minimalist', desc: 'Pure design, no theme', defaultText: 'YOUR TEXT', defaultColor: '#FFFFFF', symbol: '' },
 ];
 
 const COLORS = [
@@ -64,7 +68,7 @@ type Step = 'material' | 'occasion' | 'design' | 'review' | 'checkout';
 // --- Realistic Preview Component ---
 function BottleRealisticPreview({ selection }: { selection: any }) {
   const isGlass = selection.material.id === 'glass';
-  const isMetal = selection.material.id === 'stainless' || selection.material.id === 'titanium';
+  const isMetal = selection.material.id === 'stainless';
   const isPlastic = selection.material.id === 'plastic';
 
   let bodyWidth = 180;
@@ -185,9 +189,10 @@ function BottleRealisticPreview({ selection }: { selection: any }) {
              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center px-6 pointer-events-none">
                  {/* Occasion Label */}
                  {selection.occasion.id !== 'minimal' && (
-                    <div className="mb-4 px-4 py-1.5 border-y border-white/20 drop-shadow-md">
-                      <span className="text-[10px] font-bold tracking-[0.4em] text-white/90 uppercase">{selection.occasion.name}</span>
-                    </div>
+                  <div className="mb-4 flex flex-col items-center gap-1 drop-shadow-md">
+                    <span className="text-2xl">{selection.occasion.symbol}</span>
+                    <span className="text-[10px] font-bold tracking-[0.4em] text-white/90 uppercase border-y border-white/20 px-2">{selection.occasion.name}</span>
+                  </div>
                  )}
                  
                  {/* Main Text Customization */}
@@ -199,7 +204,7 @@ function BottleRealisticPreview({ selection }: { selection: any }) {
                       textShadow: selection.textColor === '#000000' || selection.textColor === '#171717'
                         ? '0 1px 1px rgba(255,255,255,0.3)' 
                         : '0 2px 8px rgba(0,0,0,0.6)',
-                      transform: `scaleY(0.9) scale(${selection.textScale}) translateY(${(selection.textPosition - 0.4) * 200}px)`, 
+                      transform: `scaleY(0.9) scale(${selection.textScale}) translateY(${(selection.textPosition - 0.4) * 200}px) translateX(${selection.textRotationX * -100}px) rotate(${selection.textRotationZ}rad)`, 
                     }}
                   >
                     {selection.customText || 'YOUR TEXT'}
@@ -212,7 +217,7 @@ function BottleRealisticPreview({ selection }: { selection: any }) {
                       className="mt-6 w-16 h-16 object-contain opacity-90 drop-shadow-lg filter transition-all absolute"
                       style={{ 
                         filter: selection.textColor === '#ffffff' ? 'brightness(0) invert(1)' : 'brightness(0)',
-                        transform: `scale(${selection.logoScale}) translateY(${(selection.logoPosition + 0.6) * 150}px)`,
+                        transform: `scale(${selection.logoScale}) translateY(${(selection.logoPosition + 0.6) * 150}px) translateX(${selection.logoRotationX * -100}px)`,
                       }}
                     />
                  )}
@@ -253,9 +258,13 @@ export default function App() {
     logo: null as string | null,
     textScale: 1,
     textPosition: 0.4,
+    textRotationX: 0,
+    textRotationZ: 0,
     textFont: 'Inter',
+    isMoveEnabled: false,
     logoScale: 1,
     logoPosition: -0.6,
+    logoRotationX: 0,
   });
 
   useEffect(() => {
@@ -292,8 +301,9 @@ export default function App() {
     <div className="min-h-screen bg-[#030014] text-white font-sans selection:bg-cyan-500/30">
       {/* Background Decor */}
       <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-purple-900/10 blur-[120px] rounded-full" />
-        <div className="absolute bottom-10 right-[-10%] w-[50%] h-[50%] bg-cyan-900/10 blur-[150px] rounded-full" />
+        <Canvas>
+          <StarfieldBackground />
+        </Canvas>
       </div>
 
       <nav className="fixed top-0 w-full z-50 glass-dark border-b border-white/5 py-4">
@@ -347,10 +357,20 @@ export default function App() {
                 <p className="text-neutral-400 text-lg">Choose the material that defines your performance.</p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+              <motion.div 
+                initial="hidden"
+                animate="visible"
+                variants={{
+                  visible: { transition: { staggerChildren: 0.1 } }
+                }}
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12"
+              >
                 {MATERIALS.map((mat) => (
-                  <button
+                  <motion.button
                     key={mat.id}
+                    variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.98 }}
                     onClick={() => setSelection({ ...selection, material: mat })}
                     className={`p-8 rounded-[40px] text-left transition-all relative overflow-hidden group ${
                       selection.material.id === mat.id 
@@ -373,9 +393,9 @@ export default function App() {
                         <CheckCircle2 className="w-6 h-6" />
                       </div>
                     )}
-                  </button>
+                  </motion.button>
                 ))}
-              </div>
+              </motion.div>
 
               <div className="mt-auto flex justify-center">
                 <button 
@@ -408,7 +428,7 @@ export default function App() {
                 {OCCASIONS.map((occ) => (
                   <button
                     key={occ.id}
-                    onClick={() => setSelection({ ...selection, occasion: occ })}
+                    onClick={() => setSelection({ ...selection, occasion: occ, customText: occ.defaultText, bottleColor: occ.defaultColor })}
                     className={`p-10 rounded-[48px] text-left transition-all ${
                       selection.occasion.id === occ.id 
                       ? 'bg-neutral-900 ring-2 ring-purple-500/50' 
@@ -416,7 +436,7 @@ export default function App() {
                     }`}
                   >
                     <div className="w-10 h-10 mb-6 bg-white/5 rounded-full flex items-center justify-center text-purple-400">
-                      <Calendar className="w-5 h-5" />
+                      <span className="text-xl">{occ.symbol}</span>
                     </div>
                     <h3 className="text-2xl font-black mb-2 uppercase italic">{occ.name}</h3>
                     <p className="text-sm text-neutral-500">{occ.desc}</p>
@@ -463,31 +483,49 @@ export default function App() {
                         <div className="flex items-center gap-2 text-sm font-black text-neutral-400 uppercase tracking-widest">
                           <Palette className="w-4 h-4" /> Bottle Color
                         </div>
-                        <div className="flex flex-wrap gap-3">
+                        <motion.div 
+                          className="flex flex-wrap gap-3"
+                          initial="hidden"
+                          animate="visible"
+                          variants={{
+                            visible: { transition: { staggerChildren: 0.05 } }
+                          }}
+                        >
                           {COLORS.map((c) => (
-                            <button
+                            <motion.button
                               key={c}
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.95 }}
                               onClick={() => setSelection({ ...selection, bottleColor: c })}
                               className={`w-10 h-10 rounded-full border-2 transition-all ${selection.bottleColor === c ? 'border-cyan-400 scale-110 shadow-lg shadow-cyan-400/20' : 'border-transparent opacity-80 hover:opacity-100'}`}
                               style={{ backgroundColor: c }}
                             />
                           ))}
-                        </div>
+                        </motion.div>
                       </div>
                       <div className="space-y-4">
                         <div className="flex items-center gap-2 text-sm font-black text-neutral-400 uppercase tracking-widest">
                           <Palette className="w-4 h-4" /> Cap Color
                         </div>
-                        <div className="flex flex-wrap gap-3">
+                        <motion.div 
+                          className="flex flex-wrap gap-3"
+                          initial="hidden"
+                          animate="visible"
+                          variants={{
+                            visible: { transition: { staggerChildren: 0.05 } }
+                          }}
+                        >
                           {COLORS.map((c) => (
-                            <button
+                            <motion.button
                               key={c}
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.95 }}
                               onClick={() => setSelection({ ...selection, capColor: c })}
                               className={`w-10 h-10 rounded-full border-2 transition-all ${selection.capColor === c ? 'border-purple-400 scale-110 shadow-lg shadow-purple-400/20' : 'border-transparent opacity-80 hover:opacity-100'}`}
                               style={{ backgroundColor: c }}
                             />
                           ))}
-                        </div>
+                        </motion.div>
                       </div>
                     </div>
 
@@ -536,36 +574,45 @@ export default function App() {
                         placeholder="Enter your message..."
                       />
                       
-                      <div className="bg-white/5 p-4 rounded-2xl border border-white/10 space-y-4">
-                         <div className="space-y-2">
-                            <label className="text-[10px] font-bold text-neutral-500 uppercase flex justify-between">
-                               <span>Text Scale</span>
-                               <span>{Math.round(selection.textScale * 100)}%</span>
-                            </label>
-                            <input 
-                              type="range" min="0.5" max="2" step="0.1" 
-                              value={selection.textScale}
-                              onChange={e => setSelection({...selection, textScale: parseFloat(e.target.value)})}
-                              className="w-full h-1 bg-white/10 rounded-full appearance-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-cyan-400 [&::-webkit-slider-thumb]:rounded-full cursor-pointer" 
-                            />
-                         </div>
-                         <div className="space-y-2">
-                            <label className="text-[10px] font-bold text-neutral-500 uppercase flex justify-between">
-                              <span>Text Position (Vertical)</span>
-                            </label>
-                            <input 
-                              type="range" min="-1.5" max="1.5" step="0.1" 
-                              value={selection.textPosition}
-                              onChange={e => setSelection({...selection, textPosition: parseFloat(e.target.value)})}
-                              className="w-full h-1 bg-white/10 rounded-full appearance-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-cyan-400 [&::-webkit-slider-thumb]:rounded-full cursor-pointer" 
-                            />
-                         </div>
+                      <div className="space-y-2">
+                         <label className="text-[10px] font-bold text-neutral-500 uppercase flex justify-between">
+                            <span>Text Scale</span>
+                            <span>{Math.round(selection.textScale * 100)}%</span>
+                         </label>
+                         <input 
+                           type="range" min="0.5" max="3" step="0.1" 
+                           value={selection.textScale}
+                           onChange={e => setSelection({...selection, textScale: parseFloat(e.target.value)})}
+                           className="w-full h-1 bg-white/10 rounded-full appearance-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-cyan-400 [&::-webkit-slider-thumb]:rounded-full cursor-pointer" 
+                         />
+                      </div>
+                      
+                      <div className="pt-2 border-t border-white/10 uppercase tracking-widest text-[10px] font-black text-neutral-500 flex items-center justify-between">
+                        <span className="flex-1">Tip: Enable 'Move Tool' to drag text directly on the bottle!</span>
+                        <div className="flex gap-2">
+                          <button 
+                            onClick={() => setSelection({ ...selection, isMoveEnabled: !selection.isMoveEnabled })}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-white transition-colors ${selection.isMoveEnabled ? 'bg-cyan-500/50' : 'bg-white/5 hover:bg-white/10'}`}
+                          >
+                            <Eye className="w-3 h-3" />
+                            {selection.isMoveEnabled ? 'Locked' : 'Move Tool'}
+                          </button>
+                          <button 
+                            onClick={() => setSelection({ ...selection, textRotationZ: selection.textRotationZ === 0 ? Math.PI / 2 : 0 })}
+                            className="flex items-center gap-2 px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-lg text-white transition-colors"
+                          >
+                            <RotateCw className="w-3 h-3" />
+                            Rotate
+                          </button>
+                        </div>
                       </div>
 
                       <div className="flex flex-wrap gap-2 pt-2">
                         {COLORS.map((c) => (
-                          <button
+                          <motion.button
                             key={c}
+                            whileHover={{ scale: 1.2 }}
+                            whileTap={{ scale: 0.9 }}
                             onClick={() => setSelection({ ...selection, textColor: c })}
                             className={`w-8 h-8 rounded-lg border-2 transition-all ${selection.textColor === c ? 'border-white scale-110' : 'border-transparent opacity-60'}`}
                             style={{ backgroundColor: c }}
@@ -612,29 +659,9 @@ export default function App() {
                         )}
                       </label>
                       {selection.logo && (
-                        <div className="mt-4 space-y-4 bg-white/5 p-4 rounded-2xl border border-white/10">
-                           <div className="space-y-2">
-                              <label className="text-[10px] font-bold text-neutral-500 uppercase flex justify-between">
-                                 <span>Logo Scale</span>
-                                 <span>{Math.round(selection.logoScale * 100)}%</span>
-                              </label>
-                              <input 
-                                type="range" min="0.2" max="3" step="0.1" 
-                                value={selection.logoScale}
-                                onChange={e => setSelection({...selection, logoScale: parseFloat(e.target.value)})}
-                                className="w-full h-1 bg-white/10 rounded-full appearance-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-cyan-400 [&::-webkit-slider-thumb]:rounded-full cursor-pointer" 
-                              />
-                           </div>
-                           <div className="space-y-2">
-                              <label className="text-[10px] font-bold text-neutral-500 uppercase flex justify-between">
-                                <span>Logo Position (Vertical)</span>
-                              </label>
-                              <input 
-                                type="range" min="-1.5" max="1.5" step="0.1" 
-                                value={selection.logoPosition}
-                                onChange={e => setSelection({...selection, logoPosition: parseFloat(e.target.value)})}
-                                className="w-full h-1 bg-white/10 rounded-full appearance-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-cyan-400 [&::-webkit-slider-thumb]:rounded-full cursor-pointer" 
-                              />
+                        <div className="mt-4 p-4 rounded-2xl border border-white/10 bg-white/5 space-y-4">
+                           <div className="uppercase tracking-widest text-[10px] font-black text-neutral-500">
+                             Tip: Drag logo directly on the bottle in the preview to move it! Pinch or use wheel to resize.
                            </div>
                            <button 
                              onClick={() => setSelection({ ...selection, logo: null, logoScale: 1, logoPosition: -0.6 })}
@@ -659,15 +686,8 @@ export default function App() {
               </div>
 
               {/* Right: Realistic Preview */}
-              <div className="flex-1 min-h-[600px] bg-neutral-950 rounded-[64px] border border-white/10 relative overflow-hidden lg:sticky lg:top-32 shadow-2xl flex items-center justify-center">
-                <Bottle3DPreview selection={selection} />
-
-                <div className="absolute top-8 left-8 flex flex-col gap-2 pointer-events-none">
-                   <div className="glass px-4 py-2 rounded-xl text-[10px] font-black uppercase text-cyan-400 tracking-tighter flex items-center gap-2">
-                      <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse" />
-                      Visual Lab Engine: Active
-                   </div>
-                </div>
+              <div className="flex-1 h-[600px] lg:min-h-[800px] bg-neutral-950 rounded-[64px] border border-white/10 relative overflow-hidden lg:sticky lg:top-32 shadow-2xl flex items-center justify-center">
+                <Bottle3DPreview selection={selection} setSelection={setSelection} />
 
                 <div className="absolute bottom-8 right-8 pointer-events-none">
                    <div className="text-[10px] text-white/20 font-black uppercase tracking-widest text-right">
@@ -696,7 +716,7 @@ export default function App() {
 
                 <div className="grid md:grid-cols-2 gap-12 items-center bg-neutral-900 overflow-hidden rounded-[48px] p-10 border border-white/5 mb-12">
                    <div className="h-[400px] flex items-center justify-center bg-black/50 rounded-[32px] overflow-hidden relative">
-                      <Bottle3DPreview selection={selection} />
+                      <Bottle3DPreview selection={selection} setSelection={setSelection} />
                    </div>
 
                    <div className="space-y-8">
