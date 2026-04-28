@@ -14,6 +14,7 @@ export function AdminPanel() {
         setItems(itemsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
         
         const ordersSnapshot = await getDocs(collection(db, 'orders'));
+        console.log("Fetched orders:", ordersSnapshot.size);
         setOrders(ordersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     } catch (error) {
         console.error("Firestore Error: ", error);

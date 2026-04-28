@@ -334,6 +334,11 @@ export default function App() {
             <button onClick={() => setIsBasketOpen(true)} className="flex items-center gap-1 text-xs font-bold text-neutral-500 hover:text-cyan-400 transition-colors">
                  <ShoppingBag className="w-4 h-4" /> ({basket.length})
             </button>
+            {user && (
+                <button onClick={() => signOut(auth)} className="text-xs font-bold text-neutral-500 hover:text-red-400 transition-colors">
+                  Logout
+                </button>
+            )}
             <Box className="w-8 h-8 text-cyan-400" />
             <span className="font-display font-black text-2xl tracking-tighter">CUSTOM<span className="text-cyan-400">CAPS</span></span>
           </div>
@@ -829,13 +834,14 @@ function CheckoutStep({ userEmail, basket, setBasket }: { userEmail: string, bas
     if (basket.length > 0) {
       const saveOrder = async () => {
         try {
-          await addDoc(collection(db, 'orders'), {
+            await addDoc(collection(db, 'orders'), {
             customerEmail: userEmail,
             items: basket,
             total: basket.reduce((sum: number, item: any) => sum + item.price, 0),
             status: 'pending',
             createdAt: new Date().toISOString()
-          });
+          }).then(() => console.log("Order saved successfully"))
+            .catch(err => console.error("Error adding document: ", err));
           setBasket([]); // Clear basket after saving
         } catch (error) {
           console.error("Error saving order:", error);
