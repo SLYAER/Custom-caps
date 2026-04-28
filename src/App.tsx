@@ -38,10 +38,20 @@ import {
 import { Bottle3DPreview } from './Bottle3D';
 import { processAndCropImage } from './lib/imageUtils';
 const MATERIALS = [
-  { id: 'glass', name: 'Premium Glass', price: '₹30', icon: <Droplets className="w-6 h-6 text-blue-400" />, desc: 'Crystal clear, eco-friendly & durable.' },
-  { id: 'stainless', name: 'Borosil Cylindrical', price: '₹199', icon: <Layers className="w-6 h-6 text-neutral-400" />, desc: 'Matte finish with a carry strap ring.' },
-  { id: 'plastic', name: 'Sports Plastic', price: '₹20', icon: <Box className="w-6 h-6 text-emerald-400" />, desc: 'Lightweight & perfect for sports.' },
+  { id: 'glass', name: 'Premium Glass', price: 99, icon: <Droplets className="w-6 h-6 text-blue-400" />, desc: 'Crystal clear, eco-friendly & durable.' },
+  { id: 'stainless', name: 'Borosil Cylindrical', price: 199, icon: <Layers className="w-6 h-6 text-neutral-400" />, desc: 'Matte finish with a carry strap ring.' },
+  { id: 'plastic', name: 'Sports Plastic', price: 69, icon: <Box className="w-6 h-6 text-emerald-400" />, desc: 'Lightweight & perfect for sports.' },
 ];
+
+const calculatePrice = (selection: any) => {
+    let price = selection.material.price;
+    if (selection.material.id === 'plastic' && selection.occasion.id === 'sports') {
+        price = 69;
+    } else if (selection.material.id === 'glass') {
+        price = 99;
+    }
+    return price;
+};
 
 
 const OCCASIONS = [
@@ -63,10 +73,11 @@ const SHAPES = [
   { id: 'wide', name: 'Rugged Wide', radius: 1.3, height: 3.5 },
 ];
 
-type Step = 'material' | 'occasion' | 'design' | 'review' | 'checkout' | 'about';
+type Step = 'material' | 'occasion' | 'design' | 'review' | 'checkout' | 'about' | 'admin';
 
 // --- Realistic Preview Component ---
 import { AboutPage } from './About';
+import { AdminPanel } from './AdminPanel';
 function BottleRealisticPreview({ selection }: { selection: any }) {
   const isGlass = selection.material.id === 'glass';
   const isMetal = selection.material.id === 'stainless';
@@ -248,6 +259,7 @@ export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [currentStep, setCurrentStep] = useState<Step>('material');
+  const [basket, setBasket] = useState<any[]>([]);
   const [selection, setSelection] = useState({
     material: MATERIALS[0],
     occasion: OCCASIONS[0],
@@ -310,6 +322,9 @@ export default function App() {
       <nav className="fixed top-0 w-full z-50 glass-dark border-b border-white/5 py-4">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
           <div className="flex items-center gap-2">
+            <button className="flex items-center gap-1 text-xs font-bold text-neutral-500 hover:text-cyan-400 transition-colors">
+                 <ShoppingBag className="w-4 h-4" /> ({basket.length})
+            </button>
             <Box className="w-8 h-8 text-cyan-400" />
             <span className="font-display font-black text-2xl tracking-tighter">CUSTOM<span className="text-cyan-400">CAPS</span></span>
           </div>
@@ -387,7 +402,7 @@ export default function App() {
                         <h3 className="text-2xl font-black mb-2">{mat.name}</h3>
                         <p className="text-sm text-neutral-500 leading-relaxed max-w-[150px]">{mat.desc}</p>
                       </div>
-                      <span className="text-lg font-black text-white/40">{mat.price}</span>
+                      <span className="text-lg font-black text-white/40">₹{mat.price}</span>
                     </div>
                     {selection.material.id === mat.id && (
                       <div className="absolute top-4 right-4 text-cyan-400">
@@ -734,7 +749,7 @@ export default function App() {
                       <div className="pt-8 border-t border-white/5">
                         <div className="flex justify-between items-end mb-8">
                            <span className="text-neutral-400 font-bold">Total Investment</span>
-                           <span className="text-4xl font-black italic">{selection.material.price}</span>
+                           <span className="text-4xl font-black italic">₹{calculatePrice(selection)}</span>
                         </div>
                         <button 
                            onClick={() => nextStep('checkout')}
@@ -755,13 +770,22 @@ export default function App() {
           {currentStep === 'about' && (
              <AboutPage onBack={() => nextStep('material')} />
           )}
+
+          {currentStep === 'admin' && (
+             <AdminPanel />
+          )}
         </AnimatePresence>
       </main>
       
       {/* Footer Branding */}
       <footer className="relative z-10 py-10 border-t border-white/5 text-center mt-auto flex flex-col items-center gap-4">
          <p className="text-[10px] font-black text-neutral-600 uppercase tracking-[0.4em]">Proprietary Customisation Platform v4.0.0-PRO</p>
-         <button onClick={() => nextStep('about')} className="text-xs font-bold text-neutral-500 hover:text-cyan-400 uppercase tracking-widest transition-colors">About Us</button>
+         <div className="flex gap-4">
+            <button onClick={() => nextStep('about')} className="text-xs font-bold text-neutral-500 hover:text-cyan-400 uppercase tracking-widest transition-colors">About Us</button>
+            {user?.email === 'loveranger900@gmail.com' && (
+                <button onClick={() => nextStep('admin')} className="text-xs font-bold text-neutral-500 hover:text-cyan-400 uppercase tracking-widest transition-colors">Admin Panel</button>
+            )}
+         </div>
       </footer>
     </div>
   );
