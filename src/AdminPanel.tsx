@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { db } from './lib/firebase';
-import { collection, updateDoc, doc, onSnapshot } from 'firebase/firestore';
+import { collection, updateDoc, doc, onSnapshot, addDoc } from 'firebase/firestore';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Package, Clock, DollarSign, CircleUser, ChevronDown, CheckCircle2, Truck, Eye, X } from 'lucide-react';
+import { Package, Clock, DollarSign, CircleUser, ChevronDown, CheckCircle2, Truck, Eye, X, Zap } from 'lucide-react';
 import { Canvas } from '@react-three/fiber';
 import { Bottle3DPreview } from './Bottle3D';
 
@@ -46,6 +46,51 @@ export function AdminPanel() {
     }
   };
 
+  const seedDummyOrders = async () => {
+    const isConfirmed = window.confirm('This will add 45 dummy orders. Proceed?');
+    if (!isConfirmed) return;
+    
+    const dummyNames = ['Alex', 'Jordan', 'Taylor', 'Sam', 'Casey', 'Riley', 'Morgan', 'Quinn'];
+    const dummyDomains = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com'];
+    const dummyStatuses = ['pending', 'in production', 'in delivery', 'delivered'];
+    const dummyColors = ['Electric Cyan', 'Neon Pink', 'Matte Black', 'Brushed Steel'];
+    const dummySizes = ['500ml', '750ml', '1000ml'];
+    
+    for (let i = 0; i < 45; i++) {
+        const randomName = dummyNames[Math.floor(Math.random() * dummyNames.length)];
+        const randomDomain = dummyDomains[Math.floor(Math.random() * dummyDomains.length)];
+        const randomStatus = dummyStatuses[Math.floor(Math.random() * dummyStatuses.length)];
+        const randomColor = dummyColors[Math.floor(Math.random() * dummyColors.length)];
+        const randomSize = dummySizes[Math.floor(Math.random() * dummySizes.length)];
+        const quantity = Math.floor(Math.random() * 3) + 1;
+        const pricePerUnit = Math.floor(Math.random() * 1000) + 500;
+        
+        const randomPastDate = new Date(Date.now() - Math.floor(Math.random() * 7 * 24 * 60 * 60 * 1000));
+        
+        try {
+            await addDoc(collection(db, 'orders'), {
+                customerEmail: `${randomName.toLowerCase()}${Math.floor(Math.random() * 1000)}@${randomDomain}`,
+                createdAt: randomPastDate.toISOString(),
+                status: randomStatus,
+                items: [{
+                    quantity: quantity,
+                    customText: `SIPS-${Math.floor(Math.random() * 9999)}`,
+                    bottleColor: randomColor,
+                    size: randomSize,
+                    shape: 'Standard',
+                    totalPrice: pricePerUnit * quantity,
+                    material: {
+                         name: 'Titanium'
+                    }
+                }],
+                total: pricePerUnit * quantity
+            });
+        } catch(e) {
+            console.error('Failed dummy add', e);
+        }
+    }
+  };
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-8 max-w-7xl mx-auto text-white min-h-screen">
       <div className="flex items-center gap-4 mb-12 border-b border-white/10 pb-8">
@@ -58,6 +103,12 @@ export function AdminPanel() {
             <Package className="text-cyan-400 w-8 h-8" />
             Active Orders ({orders.length})
           </h2>
+          <button 
+             onClick={seedDummyOrders}
+             className="px-4 py-2 border border-dashed border-white/20 hover:bg-white/5 text-neutral-400 font-mono text-xs uppercase tracking-widest rounded-xl transition-colors"
+          >
+             Seed 45 Orders
+          </button>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

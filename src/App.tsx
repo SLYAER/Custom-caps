@@ -96,6 +96,7 @@ import { AboutPage } from './About';
 import { AdminPanel } from './AdminPanel';
 import { BasketPanel } from './components/BasketPanel';
 import { UserProfile } from './UserProfile';
+import { CursorPet } from './components/CursorPet';
 function BottleRealisticPreview({ selection }: { selection: any }) {
   const isGlass = selection.material.id === 'glass';
   const isMetal = selection.material.id === 'stainless';
@@ -400,6 +401,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#030014] text-white font-sans selection:bg-cyan-500/30">
+      <CursorPet />
       {/* Background Decor */}
       <div className="fixed inset-0 pointer-events-none z-0">
         <Canvas>
