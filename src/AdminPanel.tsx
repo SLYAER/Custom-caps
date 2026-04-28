@@ -9,11 +9,15 @@ export function AdminPanel() {
   const [newItem, setNewItem] = useState({ name: '', price: 0 });
 
   const fetchData = async () => {
-    const itemsSnapshot = await getDocs(collection(db, 'items'));
-    setItems(itemsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    
-    const ordersSnapshot = await getDocs(collection(db, 'orders'));
-    setOrders(ordersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    try {
+        const itemsSnapshot = await getDocs(collection(db, 'items'));
+        setItems(itemsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        
+        const ordersSnapshot = await getDocs(collection(db, 'orders'));
+        setOrders(ordersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    } catch (error) {
+        console.error("Firestore Error: ", error);
+    }
   };
 
   useEffect(() => {

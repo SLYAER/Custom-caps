@@ -1,0 +1,22 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Admins
+    function isAdmin() {
+      return request.auth != null && (request.auth.token.email == 'loveranger900@gmail.com' || request.auth.token.email == 'adarshray142@gmail.com');
+    }
+    
+    match /items/{itemId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    match /orders/{orderId} {
+      // Allows user to read their own orders, and admin to read all
+      allow read: if request.auth != null && (request.auth.token.email == resource.data.customerEmail || isAdmin());
+      // Allows user to create their own order, admin to do anything
+      allow create: if request.auth != null && (request.resource.data.customerEmail == request.auth.token.email || isAdmin());
+      allow update, delete: if isAdmin();
+    }
+  }
+}
