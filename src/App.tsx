@@ -818,7 +818,10 @@ function CheckoutStep({ userEmail, basket, setBasket }: { userEmail: string, bas
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [email, setEmail] = useState(userEmail);
 
+  const [error, setError] = useState('');
+
   async function handleOrderConfirmation() {
+    setError('');
     if (basket.length > 0) {
       try {
         await addDoc(collection(db, 'orders'), {
@@ -830,8 +833,9 @@ function CheckoutStep({ userEmail, basket, setBasket }: { userEmail: string, bas
         });
         setBasket([]);
         setIsSubscribed(true);
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error saving order:", error);
+        setError('Failed to confirm order: ' + error.message);
       }
     }
   }
@@ -843,6 +847,7 @@ function CheckoutStep({ userEmail, basket, setBasket }: { userEmail: string, bas
       animate={{ opacity: 1, y: 0 }}
       className="max-w-2xl mx-auto w-full text-center py-20 flex flex-col items-center"
     >
+        {error && <div className="p-4 mb-4 text-red-500 bg-red-500/10 rounded-xl">{error}</div>}
         <div className="w-32 h-32 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-10 border-2 border-emerald-500/50 relative">
             <CheckCircle2 className="w-16 h-16 text-emerald-400" />
             {isSubscribed && (
