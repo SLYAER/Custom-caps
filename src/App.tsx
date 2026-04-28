@@ -22,7 +22,9 @@ import {
   Loader2,
   RotateCw,
   Truck,
-  Package
+  Package,
+  Menu,
+  X
 } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 
@@ -265,6 +267,7 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(true);
   const [currentStep, setCurrentStep] = useState<Step>('material');
   const [isBasketOpen, setIsBasketOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isGuest, setIsGuest] = useState(false);
   const [basket, setBasket] = useState<any[]>([]);
   const [selection, setSelection] = useState({
@@ -334,9 +337,14 @@ export default function App() {
 
       <nav className="fixed top-0 w-full z-50 glass-dark border-b border-white/5 py-3 sm:py-4">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
-          <div className="flex items-center gap-1 sm:gap-2">
-            <Box className="w-6 h-6 sm:w-8 sm:h-8 text-cyan-400" />
-            <span className="font-display font-black text-xl sm:text-2xl tracking-tighter">CUSTOM<span className="text-cyan-400">CAPS</span></span>
+          <div className="flex items-center gap-2 sm:gap-4">
+            <button onClick={() => setIsSidebarOpen(true)} className="text-neutral-400 hover:text-white transition-colors">
+              <Menu className="w-6 h-6 sm:w-7 sm:h-7" />
+            </button>
+            <div className="flex items-center gap-1 sm:gap-2 cursor-pointer" onClick={() => nextStep('material')}>
+              <Box className="w-6 h-6 sm:w-8 sm:h-8 text-cyan-400" />
+              <span className="font-display font-black text-xl sm:text-2xl tracking-tighter">CUSTOM<span className="text-cyan-400">CAPS</span></span>
+            </div>
           </div>
           
           <div className="flex gap-2 sm:gap-4 items-center">
@@ -789,15 +797,48 @@ export default function App() {
       {/* Footer Branding */}
       <footer className="relative z-10 py-10 border-t border-white/5 text-center mt-auto flex flex-col items-center gap-4">
          <p className="text-[10px] font-black text-neutral-600 uppercase tracking-[0.4em]">Proprietary Customisation Platform v4.0.0-PRO</p>
-         <div className="flex gap-4 items-center flex-wrap justify-center">
-            <button onClick={() => nextStep('about')} className="text-xs font-bold text-neutral-500 hover:text-cyan-400 uppercase tracking-widest transition-colors">About Us</button>
-            <button onClick={() => nextStep('orders')} className="text-xs font-bold text-neutral-500 hover:text-cyan-400 uppercase tracking-widest transition-colors">My Orders</button>
-            {['loveranger900@gmail.com', 'adarshray142@gmail.com', 'scam7737@gmail.com'].includes(user?.email || '') && (
-                <button onClick={() => nextStep('admin')} className="text-xs font-bold text-neutral-500 hover:text-cyan-400 uppercase tracking-widest transition-colors">Admin Panel</button>
-            )}
-         </div>
       </footer>
       <BasketPanel isOpen={isBasketOpen} onClose={() => setIsBasketOpen(false)} basket={basket} setBasket={setBasket} userEmail={user?.email || ''} />
+
+      <AnimatePresence>
+        {isSidebarOpen && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsSidebarOpen(false)}
+              className="fixed inset-0 bg-black/80 backdrop-blur-md z-50"
+            />
+            <motion.div
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed left-0 top-0 h-full w-[300px] sm:w-[400px] bg-neutral-950 border-r border-white/10 z-50 p-8 flex flex-col"
+            >
+              <div className="flex justify-between items-center mb-16 shrink-0">
+                <div className="flex items-center gap-2">
+                  <Box className="w-8 h-8 text-cyan-400" />
+                  <span className="font-display font-black text-2xl tracking-tighter uppercase italic">CUSTOM<span className="text-cyan-400">CAPS</span></span>
+                </div>
+                <button onClick={() => setIsSidebarOpen(false)} className="p-3 hover:bg-white/10 rounded-full transition-colors text-white">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="flex flex-col gap-8 font-display font-black text-3xl sm:text-4xl italic uppercase tracking-tighter">
+                  <button onClick={() => { setIsSidebarOpen(false); nextStep('material'); }} className="text-left py-2 hover:text-cyan-400 transition-colors text-white">Home</button>
+                  <button onClick={() => { setIsSidebarOpen(false); nextStep('orders'); }} className="text-left py-2 hover:text-cyan-400 transition-colors text-white">My Orders</button>
+                  <button onClick={() => { setIsSidebarOpen(false); nextStep('about'); }} className="text-left py-2 hover:text-cyan-400 transition-colors text-white">About Us</button>
+                  {['loveranger900@gmail.com', 'adarshray142@gmail.com', 'scam7737@gmail.com'].includes(user?.email || '') && (
+                      <button onClick={() => { setIsSidebarOpen(false); nextStep('admin'); }} className="text-left py-2 hover:text-cyan-400 transition-colors text-white">Admin Panel</button>
+                  )}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
