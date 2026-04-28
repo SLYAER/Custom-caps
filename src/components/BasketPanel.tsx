@@ -115,7 +115,7 @@ export function BasketPanel({ isOpen, onClose, basket, setBasket, userEmail }: a
                     groupedBasket.map((item: any, index: number) => (
                       <div key={index} className="bg-neutral-900 p-6 rounded-3xl flex justify-between items-center border border-white/5">
                         <div>
-                          <h4 className="font-black text-xl">{item.material.name}</h4>
+                          <h4 className="font-black text-xl">{item.material.name} <span className="text-neutral-500 text-sm">({item.size || '500ml'})</span></h4>
                           <p className="text-xs text-neutral-400 mt-1 uppercase font-bold tracking-widest">{item.customText}</p>
                         </div>
                         <div className="flex items-center gap-6">

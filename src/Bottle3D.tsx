@@ -50,43 +50,63 @@ function DragScaleWrapper({ isMoveEnabled, setControlsEnabled, onUpdate, childre
 }
 
 function LogoDecal({ url, scale = 1, positionY = 0, radius = 1 }: { url: string, scale?: number, positionY?: number, radius?: number }) {
-  const [texture, setTexture] = useState<Texture | null>(null);
+  const [texture, setTexture] = useState<THREE.CanvasTexture | null>(null);
+  const [aspect, setAspect] = useState(1);
+
   useEffect(() => {
     if (!url) {
        setTexture(null);
        return;
     }
+    const canvas = document.createElement('canvas');
+    canvas.width = 4096;
+    canvas.height = 1024;
+    
     const img = new Image();
+    img.crossOrigin = "anonymous";
     img.src = url;
     img.onload = () => {
-      const tex = new THREE.Texture(img);
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      const maxDim = Math.max(img.width, img.height);
+      const renderW = (img.width / maxDim) * 800 * scale;
+      const renderH = (img.height / maxDim) * 800 * scale;
+      
+      ctx.drawImage(img, (canvas.width - renderW)/2, (canvas.height - renderH)/2, renderW, renderH);
+      
+      const tex = new THREE.CanvasTexture(canvas);
       tex.colorSpace = THREE.SRGBColorSpace;
       tex.anisotropy = 16;
-      tex.needsUpdate = true;
+      tex.minFilter = THREE.LinearMipmapLinearFilter;
+      tex.magFilter = THREE.LinearFilter;
+      
+      setAspect(canvas.height / canvas.width);
       setTexture(tex);
     };
-  }, [url]);
+  }, [url, scale]);
 
   if (!texture) return null;
+  const circumference = 2 * Math.PI * radius;
+  const cylinderHeight = circumference * aspect;
+
   return (
-    <Decal
-      position={[0, positionY, radius]} 
-      rotation={[0, 0, 0]}
-      scale={[radius * 2 * scale, radius * 2 * scale, radius * 8]}
-      renderOrder={1}
-    >
+    <mesh position={[0, positionY, 0]} rotation={[0, Math.PI, 0]} renderOrder={2}>
+      <cylinderGeometry args={[radius + 0.008, radius + 0.008, cylinderHeight, 64, 1, true]} />
       <meshStandardMaterial 
         map={texture} 
         transparent={true}
         depthWrite={false}
         alphaTest={0.01}
         polygonOffset={true}
-        polygonOffsetFactor={-10}
+        polygonOffsetFactor={-6}
         color="#ffffff"
         roughness={0.6}
         metalness={0.1}
+        side={THREE.DoubleSide}
       />
-    </Decal>
+    </mesh>
   );
 }
 
@@ -328,6 +348,8 @@ function RealisticBottle({ selection, setSelection, setControlsEnabled, material
   let decalRadius = 1;
   let decalCenter = 2.4;
 
+  const sizeScale = selection?.size === '1L' ? 1.2 : selection?.size === '750ml' ? 1.1 : 1;
+
   if (isGlass) {
     currentPoints = getGlassPoints();
     materialProps = glassProps;
@@ -343,7 +365,7 @@ function RealisticBottle({ selection, setSelection, setControlsEnabled, material
   }
 
   return (
-    <group position={[0, -2.5, 0]}>
+    <group position={[0, -2.5 * sizeScale, 0]} scale={[sizeScale, sizeScale, sizeScale]}>
       {/* Bottle Body */}
       <mesh>
         <latheGeometry args={[currentPoints, 64]} />

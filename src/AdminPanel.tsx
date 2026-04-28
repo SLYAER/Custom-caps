@@ -98,7 +98,7 @@ export function AdminPanel() {
                       <div>
                         <div className="font-black text-lg flex items-center gap-2">
                            <span className="text-cyan-400">{item.quantity}x</span>
-                           {item.material?.name || 'Custom Bottle'}
+                           {item.material?.name || 'Custom Bottle'} <span className="text-neutral-500 text-sm">({item.size || '500ml'})</span>
                         </div>
                         <div className="text-sm text-neutral-400 mt-1 uppercase font-bold tracking-widest flex gap-2">
                            <span>{item.customText || 'NO TEXT'}</span>

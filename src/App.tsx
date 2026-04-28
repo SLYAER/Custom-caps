@@ -56,6 +56,10 @@ const calculatePrice = (selection: any) => {
     } else if (selection.material.id === 'glass') {
         price = 99;
     }
+    const sizeObj = SIZES.find(s => s.id === selection.size);
+    if (sizeObj) {
+        price += sizeObj.priceAdd;
+    }
     return price;
 };
 
@@ -77,6 +81,12 @@ const SHAPES = [
   { id: 'slim', name: 'Elite Slim', radius: 0.8, height: 5 },
   { id: 'standard', name: 'Classic', radius: 1, height: 4.5 },
   { id: 'wide', name: 'Rugged Wide', radius: 1.3, height: 3.5 },
+];
+
+const SIZES = [
+  { id: '500ml', name: '500ml', priceAdd: 0 },
+  { id: '750ml', name: '750ml', priceAdd: 100 },
+  { id: '1L', name: '1L', priceAdd: 250 },
 ];
 
 type Step = 'material' | 'occasion' | 'design' | 'review' | 'about' | 'admin' | 'orders';
@@ -274,6 +284,7 @@ export default function App() {
     material: MATERIALS[0],
     occasion: OCCASIONS[0],
     shape: 'standard',
+    size: '500ml',
     bottleColor: '#FFFFFF',
     capColor: '#171717',
     textColor: '#000000',
@@ -570,6 +581,24 @@ export default function App() {
                             className={`px-4 py-2 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all ${selection.shape === s.id ? 'bg-white text-black border-white' : 'bg-white/5 border-white/10 text-neutral-500 hover:text-white'}`}
                           >
                             {s.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Size Selection */}
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2 text-sm font-black text-neutral-400 uppercase tracking-widest">
+                        <Box className="w-4 h-4" /> Bottle Size
+                      </div>
+                      <div className="flex gap-2">
+                        {SIZES.map((s) => (
+                          <button
+                            key={s.id}
+                            onClick={() => setSelection({ ...selection, size: s.id })}
+                            className={`px-4 py-2 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all ${selection.size === s.id ? 'bg-white text-black border-white' : 'bg-white/5 border-white/10 text-neutral-500 hover:text-white'}`}
+                          >
+                            {s.name} {s.priceAdd > 0 ? `(+₹${s.priceAdd})` : ''}
                           </button>
                         ))}
                       </div>
@@ -909,7 +938,7 @@ function CustomerOrders({ userEmail }: { userEmail: string }) {
                       <div>
                         <div className="font-black text-lg flex items-center gap-2">
                            <span className="text-cyan-400">{item.quantity}x</span>
-                           {item.material?.name || 'Custom Bottle'}
+                           {item.material?.name || 'Custom Bottle'} <span className="text-neutral-500 text-sm">({item.size || '500ml'})</span>
                         </div>
                         <div className="text-sm text-neutral-400 mt-1 uppercase font-bold tracking-widest flex gap-2">
                            <span>{item.customText || 'NO TEXT'}</span>
