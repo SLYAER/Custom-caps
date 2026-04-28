@@ -759,25 +759,15 @@ export default function App() {
                                  setBasket([...basket, { ...selection, price: calculatePrice(selection) }]);
                                  setIsBasketOpen(true);
                              }}
-                             className="flex-1 bg-white/5 border border-white/10 text-white py-6 rounded-[32px] font-black text-2xl uppercase italic hover:bg-white/10 transition-all flex items-center justify-center gap-4"
+                             className="w-full bg-white text-black py-6 rounded-[32px] font-black text-2xl uppercase italic hover:bg-white/90 transition-all flex items-center justify-center gap-4"
                            >
                               Add to Basket
-                           </button>
-                           <button 
-                              onClick={() => nextStep('checkout')}
-                              className="flex-1 bg-white text-black py-6 rounded-[32px] font-black text-2xl uppercase italic hover:bg-cyan-50 transition-all flex items-center justify-center gap-4"
-                           >
-                              Checkout <CreditCard className="w-6 h-6" />
                            </button>
                         </div>
                       </div>
                    </div>
                 </div>
             </motion.section>
-          )}
-
-          {currentStep === 'checkout' && (
-            <CheckoutStep userEmail={user?.email || ''} basket={basket} setBasket={setBasket} />
           )}
 
           {currentStep === 'about' && (
@@ -800,7 +790,7 @@ export default function App() {
             )}
          </div>
       </footer>
-      <BasketPanel isOpen={isBasketOpen} onClose={() => setIsBasketOpen(false)} basket={basket} setBasket={setBasket} nextStep={nextStep} />
+      <BasketPanel isOpen={isBasketOpen} onClose={() => setIsBasketOpen(false)} basket={basket} setBasket={setBasket} userEmail={user?.email || ''} />
     </div>
   );
 }
@@ -811,98 +801,6 @@ function SummaryItem({ label, value }: { label: string, value: string }) {
       <span className="text-neutral-500 font-bold uppercase">{label}</span>
       <span className="font-black text-white">{value}</span>
     </div>
-  );
-}
-
-function CheckoutStep({ userEmail, basket, setBasket }: { userEmail: string, basket: any[], setBasket: any }) {
-  const [isSubscribed, setIsSubscribed] = useState(false);
-  const [email, setEmail] = useState(userEmail);
-
-  const [error, setError] = useState('');
-
-  async function handleOrderConfirmation() {
-    setError('');
-    if (basket.length > 0) {
-      try {
-        await addDoc(collection(db, 'orders'), {
-            customerEmail: email, // Use the email from state
-            items: basket,
-            total: basket.reduce((sum: number, item: any) => sum + item.price, 0),
-            status: 'pending',
-            createdAt: new Date().toISOString()
-        });
-        setBasket([]);
-        setIsSubscribed(true);
-      } catch (error: any) {
-        console.error("Error saving order:", error);
-        setError('Failed to confirm order: ' + error.message);
-      }
-    }
-  }
-
-  return (
-    <motion.section 
-      key="checkout"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="max-w-2xl mx-auto w-full text-center py-20 flex flex-col items-center"
-    >
-        {error && <div className="p-4 mb-4 text-red-500 bg-red-500/10 rounded-xl">{error}</div>}
-        <div className="w-32 h-32 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-10 border-2 border-emerald-500/50 relative">
-            <CheckCircle2 className="w-16 h-16 text-emerald-400" />
-            {isSubscribed && (
-              <motion.div 
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                className="absolute -right-2 -bottom-2 w-10 h-10 bg-cyan-500 rounded-full flex items-center justify-center border-4 border-[#030014]"
-              >
-                <Check className="w-5 h-5 text-black" />
-              </motion.div>
-            )}
-        </div>
-        <h1 className="font-display text-5xl font-black mb-6 uppercase italic">{isSubscribed ? "Order Confirmed!" : "Unit Reserved!"}</h1>
-        <p className="text-neutral-400 text-lg mb-10 max-w-sm mx-auto">
-            {isSubscribed ? "We have logged your order. We will send tracking updates to your inbox." : "Your custom project has been logged in our lab. Where should we send production tracking updates?"}
-        </p>
-
-        {!isSubscribed && (
-          <div className="w-full max-w-md bg-white/5 border border-white/10 p-6 rounded-3xl mb-10 shadow-2xl">
-              <div className="flex items-center gap-3 mb-4 text-left">
-                <Mail className="w-5 h-5 text-cyan-400" />
-                <span className="font-bold text-sm uppercase tracking-widest text-neutral-300">Tracking Email</span>
-              </div>
-              <form 
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handleOrderConfirmation();
-                }}
-                className="flex flex-col gap-4"
-              >
-                <input 
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="EMAIL ADDRESS"
-                  className="w-full bg-black/50 border border-white/10 rounded-2xl py-4 px-4 text-sm font-bold text-white focus:outline-none focus:border-cyan-400 focus:bg-white/5 transition-all outline-none"
-                  required
-                />
-                <button 
-                  type="submit"
-                  className="w-full bg-cyan-500 hover:bg-cyan-400 text-black py-4 rounded-2xl font-black text-sm uppercase tracking-widest transition-all"
-                >
-                  Confirm Order Updates
-                </button>
-              </form>
-          </div>
-        )}
-
-        <button 
-          onClick={() => window.location.reload()}
-          className="text-xs font-bold text-neutral-500 hover:text-white uppercase tracking-widest transition-colors mt-8"
-        >
-            Create Another Project
-        </button>
-    </motion.section>
   );
 }
 
