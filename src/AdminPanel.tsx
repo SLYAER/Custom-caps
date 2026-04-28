@@ -19,7 +19,7 @@ export function AdminPanel() {
             console.log("Fetched orders:", snapshot.size);
             const fetchedOrders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             // sort by createdAt descending
-            fetchedOrders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+            fetchedOrders.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
             setOrders(fetchedOrders);
         });
         return () => unsubscribe();

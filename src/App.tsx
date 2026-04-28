@@ -311,6 +311,16 @@ export default function App() {
   });
 
   useEffect(() => {
+    if (showMockingPopup) {
+      const timer = setTimeout(() => {
+        setShowMockingPopup(false);
+        localStorage.removeItem('showMockingPopup');
+      }, 30000);
+      return () => clearTimeout(timer);
+    }
+  }, [showMockingPopup]);
+
+  useEffect(() => {
     // Proactively clear old logins as requested
     try {
       localStorage.removeItem('sips_preview_email');
@@ -915,7 +925,7 @@ function CustomerOrders({ userEmail }: { userEmail: string }) {
         const q = query(collection(db, 'orders'), where('customerEmail', '==', userEmail));
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const fetchedOrders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            fetchedOrders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+            fetchedOrders.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
             setOrders(fetchedOrders);
         });
         return () => unsubscribe();
