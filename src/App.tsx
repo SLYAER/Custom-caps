@@ -298,6 +298,9 @@ export default function App() {
   const [isGuest, setIsGuest] = useState(() => {
     return localStorage.getItem('sips_app_isGuest') === 'true';
   });
+  const [isFrogEnabled, setIsFrogEnabled] = useState(() => {
+    return localStorage.getItem('sips_app_frog') !== 'false';
+  });
   const [basket, setBasket] = useState<any[]>(() => {
     try {
       const saved = localStorage.getItem('sips_app_basket');
@@ -352,6 +355,10 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('sips_app_selection', JSON.stringify(selection));
   }, [selection]);
+
+  useEffect(() => {
+    localStorage.setItem('sips_app_frog', isFrogEnabled.toString());
+  }, [isFrogEnabled]);
 
   useEffect(() => {
     if (showMockingPopup) {
@@ -433,7 +440,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#030014] text-white font-sans selection:bg-cyan-500/30">
-      <CursorPet />
+      {isFrogEnabled && <CursorPet />}
       {/* Background Decor */}
       <div className="fixed inset-0 pointer-events-none z-0">
         <Canvas>
@@ -978,7 +985,7 @@ export default function App() {
                 </button>
               </div>
 
-              <div className="flex flex-col gap-8 font-display font-black text-3xl sm:text-4xl italic uppercase tracking-tighter">
+              <div className="flex flex-col gap-8 font-display font-black text-3xl sm:text-4xl italic uppercase tracking-tighter flex-grow">
                   <button onClick={() => { setIsSidebarOpen(false); nextStep('material'); }} className="text-left py-2 hover:text-cyan-400 transition-colors text-white">Home</button>
                   <button onClick={() => { setIsSidebarOpen(false); nextStep('profile'); }} className="text-left py-2 hover:text-cyan-400 transition-colors text-white">Profile</button>
                   <button onClick={() => { setIsSidebarOpen(false); nextStep('orders'); }} className="text-left py-2 hover:text-cyan-400 transition-colors text-white">My Orders</button>
@@ -986,6 +993,18 @@ export default function App() {
                   {['loveranger900@gmail.com', 'adarshray142@gmail.com', 'scam7737@gmail.com'].includes(user?.email || '') && (
                       <button onClick={() => { setIsSidebarOpen(false); nextStep('admin'); }} className="text-left py-2 hover:text-cyan-400 transition-colors text-white">Admin Panel</button>
                   )}
+                  {user ? (
+                      <button onClick={() => { auth.signOut(); setIsSidebarOpen(false); setIsGuest(true); }} className="text-left py-2 text-red-500 hover:text-red-400 transition-colors">Sign Out</button>
+                  ) : (
+                      <button onClick={() => { setIsGuest(false); setIsSidebarOpen(false); }} className="text-left py-2 text-cyan-400 hover:text-cyan-300 transition-colors">Log In</button>
+                  )}
+              </div>
+
+              <div className="mt-auto pt-8 border-t border-white/10 flex items-center justify-between shrink-0">
+                  <span className="text-xs font-black uppercase text-neutral-400 tracking-widest">Enable Cursor Pet</span>
+                  <button onClick={() => setIsFrogEnabled(!isFrogEnabled)} className={`w-12 h-6 rounded-full transition-colors relative ${isFrogEnabled ? 'bg-cyan-500' : 'bg-neutral-800'}`}>
+                      <div className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-all ${isFrogEnabled ? 'left-7' : 'left-1'}`} />
+                  </button>
               </div>
             </motion.div>
           </>

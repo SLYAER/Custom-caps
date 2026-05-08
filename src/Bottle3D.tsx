@@ -243,10 +243,12 @@ function generateOccasionTexture(occasion: string, color: string) {
 
 // 2. Geometries
 
-const getBorosilPoints = () => {
+const getBorosilPoints = (shapeId: string) => {
     const pts = [];
-    const h = 4.8;
-    const r = 0.95;
+    const rMult = shapeId === 'slim' ? 0.8 : shapeId === 'wide' ? 1.2 : 1;
+    const hMult = shapeId === 'slim' ? 1.15 : shapeId === 'wide' ? 0.85 : 1;
+    const h = 4.8 * hMult;
+    const r = 0.95 * rMult;
     for (let i = 0; i <= 5; i++) {
       const a = (i / 5) * (Math.PI / 2);
       pts.push(new THREE.Vector2(Math.sin(a) * r, (1 - Math.cos(a)) * 0.15));
@@ -258,48 +260,54 @@ const getBorosilPoints = () => {
       pts.push(new THREE.Vector2(r - (1 - Math.cos(a)) * (r - 0.65), h - 0.4 + Math.sin(a) * 0.4));
     }
     pts.push(new THREE.Vector2(0.65, h + 0.1));
-    return pts;
+    return { pts, r, h };
 };
 
-const getMiltonPoints = () => {
+const getMiltonPoints = (shapeId: string) => {
     const pts = [];
+    const rMult = shapeId === 'slim' ? 0.8 : shapeId === 'wide' ? 1.2 : 1;
+    const rFactor = 0.85 * rMult;
     for ( let i = 0; i <= 5; i ++ ) {
         const a = (i / 5) * (Math.PI / 2);
-        pts.push( new THREE.Vector2( Math.sin(a) * 0.85, (1 - Math.cos(a)) * 0.15 ) );
+        pts.push( new THREE.Vector2( Math.sin(a) * rFactor, (1 - Math.cos(a)) * 0.15 ) );
     }
     for ( let i = 0; i <= 10; i ++ ) {
         const t = i / 10;
-        pts.push( new THREE.Vector2( 0.85 + Math.sin(t*Math.PI)*0.02, 0.15 + t * 2.2 ) );
+        pts.push( new THREE.Vector2( rFactor + Math.sin(t*Math.PI)*0.02, 0.15 + t * 2.2 ) );
     }
     for ( let i = 0; i <= 20; i ++ ) {
         const t = i / 20;
-        const r = 0.85 * (1 - t) * (1 - t) + 0.55 * 2 * (1 - t) * t + 0.35 * t * t;
+        const radius = rFactor * (1 - t) * (1 - t) + 0.55 * 2 * (1 - t) * t + 0.35 * t * t;
         const y = 2.35 + t * 1.5;
-        pts.push( new THREE.Vector2( r, y ) );
+        pts.push( new THREE.Vector2( radius, y ) );
     }
     pts.push( new THREE.Vector2( 0.35, 3.85 ) );
     pts.push( new THREE.Vector2( 0.4, 3.9 ) );
     pts.push( new THREE.Vector2( 0.35, 3.95 ) );
-    return pts;
+    return { pts, r: rFactor, h: 3.95 };
 };
 
-const getGlassPoints = () => {
+const getGlassPoints = (shapeId: string) => {
     const pts = [];
-    const h = 4.0;
-    const r = 0.9;
+    const rMult = shapeId === 'slim' ? 0.8 : shapeId === 'wide' ? 1.2 : 1;
+    const hMult = shapeId === 'slim' ? 1.15 : shapeId === 'wide' ? 0.85 : 1;
+    const h = 4.0 * hMult;
+    const r = 0.9 * rMult;
     pts.push(new THREE.Vector2(0, 0));
     pts.push(new THREE.Vector2(r, 0));
     pts.push(new THREE.Vector2(r, h));
     pts.push(new THREE.Vector2(r - 0.1, h + 0.3));
     pts.push(new THREE.Vector2(0.4, h + 0.5));
     pts.push(new THREE.Vector2(0.4, h + 0.8));
-    return pts;
+    return { pts, r, h };
 };
 
-const getPlasticPoints = () => {
+const getPlasticPoints = (shapeId: string) => {
     const pts = [];
-    const h = 3.6;
-    const r = 0.9;
+    const rMult = shapeId === 'slim' ? 0.8 : shapeId === 'wide' ? 1.2 : 1;
+    const hMult = shapeId === 'slim' ? 1.15 : shapeId === 'wide' ? 0.85 : 1;
+    const h = 3.6 * hMult;
+    const r = 0.9 * rMult;
     for (let i = 0; i <= 5; i++) {
         const a = (i / 5) * (Math.PI / 2);
         pts.push(new THREE.Vector2(Math.sin(a) * r, (1 - Math.cos(a)) * 0.1));
@@ -316,7 +324,7 @@ const getPlasticPoints = () => {
     }
     pts.push(new THREE.Vector2(0.4, h + 0.6));
     pts.push(new THREE.Vector2(0.4, h + 1.0));
-    return pts;
+    return { pts, r, h };
 };
 
 // 3. Main Component
@@ -337,31 +345,38 @@ function RealisticBottle({ selection, setSelection, setControlsEnabled, material
   const isStainless = material === 'stainless'; // Borosil
   const isGlass = material === 'glass';
   const isPlastic = material === 'plastic';
+  const shapeId = selection?.shape || 'standard';
 
   const occasionTexture = useMemo(() => {
     if (selection.occasion.id === 'minimal') return null;
     return generateOccasionTexture(selection.occasion.id, selection.bottleColor);
   }, [selection.occasion.id, selection.bottleColor]);
 
-  let currentPoints = getBorosilPoints();
+  let shapeData = getBorosilPoints(shapeId);
+  let currentPoints = shapeData.pts;
   let materialProps = { ...metalMaterialProps, map: occasionTexture };
   let glassProps = { ...glassMaterialProps, map: occasionTexture };
   let plasticProps = { ...plasticMaterialProps, map: occasionTexture }; 
-  let decalRadius = 1;
-  let decalCenter = 2.4;
+  let decalRadius = shapeData.r;
+  let decalCenter = shapeData.h / 2;
+  let capY = shapeData.h + 0.1;
 
   const sizeScale = selection?.size === '1L' ? 1.2 : selection?.size === '750ml' ? 1.1 : 1;
 
   if (isGlass) {
-    currentPoints = getGlassPoints();
+    shapeData = getGlassPoints(shapeId);
+    currentPoints = shapeData.pts;
     materialProps = glassProps;
-    decalRadius = 0.9;
-    decalCenter = 2.0;
+    decalRadius = shapeData.r;
+    decalCenter = shapeData.h / 2;
+    capY = shapeData.h + 0.8;
   } else if (isPlastic) {
-    currentPoints = getPlasticPoints();
+    shapeData = getPlasticPoints(shapeId);
+    currentPoints = shapeData.pts;
     materialProps = plasticProps;
-    decalRadius = 0.9;
-    decalCenter = 1.9;
+    decalRadius = shapeData.r;
+    decalCenter = shapeData.h / 2;
+    capY = shapeData.h + 1.0;
   } else {
     materialProps = { ...metalMaterialProps, map: occasionTexture };
   }
@@ -421,7 +436,7 @@ function RealisticBottle({ selection, setSelection, setControlsEnabled, material
 
       {/* Caps based on type */}
       {isStainless && (
-        <group position={[0, 4.9, 0]}>
+        <group position={[0, capY, 0]}>
            <mesh position={[0, 0.4, 0]}>
               <cylinderGeometry args={[0.65, 0.65, 0.8, 64]} />
               <meshStandardMaterial color={capColor || "#1a1a1a"} roughness={0.7} metalness={0.1} />
@@ -439,7 +454,7 @@ function RealisticBottle({ selection, setSelection, setControlsEnabled, material
       )}
 
       {isGlass && (
-         <group position={[0, 4.8, 0]}>
+         <group position={[0, capY, 0]}>
             <mesh position={[0, 0.2, 0]}>
                 <cylinderGeometry args={[0.4, 0.4, 0.4, 64]} />
                 <meshStandardMaterial color={capColor || "#E6C27A"} metalness={0.8} roughness={0.2} envMapIntensity={2} /> 
@@ -448,7 +463,7 @@ function RealisticBottle({ selection, setSelection, setControlsEnabled, material
       )}
 
       {isPlastic && (
-         <group position={[0, 4.6, 0]}>
+         <group position={[0, capY, 0]}>
             <mesh position={[0, 0.3, 0]}>
                 <cylinderGeometry args={[0.4, 0.45, 0.6, 64]} />
                 <meshStandardMaterial color={capColor || "#222"} roughness={0.5} metalness={0.1} />
