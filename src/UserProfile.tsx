@@ -4,7 +4,7 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { motion } from 'framer-motion';
 import { User, Phone, MapPin, Mail, Camera, Edit2, Check, X, Loader2 } from 'lucide-react';
 
-export function UserProfile({ user }: { user: any }) {
+export function UserProfile({ user, onLoginRequest }: { user: any, onLoginRequest?: () => void }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -19,7 +19,10 @@ export function UserProfile({ user }: { user: any }) {
   const [editForm, setEditForm] = useState({ ...profile });
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     
     const fetchProfile = async () => {
       try {
@@ -85,6 +88,31 @@ export function UserProfile({ user }: { user: any }) {
       <div className="min-h-[80vh] flex items-center justify-center">
         <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
       </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="max-w-2xl mx-auto pt-24 px-4 sm:px-6 mb-20 text-center"
+      >
+        <div className="bg-neutral-900 border border-white/5 rounded-3xl p-12 shadow-2xl relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-cyan-900/20 to-purple-900/20 pointer-events-none" />
+          <User className="w-16 h-16 text-neutral-600 mx-auto mb-6" />
+          <h2 className="text-2xl font-black uppercase tracking-widest text-white mb-4">Guest Mode</h2>
+          <p className="text-neutral-400 mb-8 max-w-sm mx-auto">
+            You need to be logged in to create and manage your profile.
+          </p>
+          <button 
+            onClick={onLoginRequest}
+            className="bg-cyan-500 hover:bg-cyan-400 text-black px-8 py-3 rounded-xl font-black text-sm uppercase tracking-widest transition-colors shadow-[0_0_20px_rgba(34,211,238,0.3)] hover:shadow-[0_0_30px_rgba(34,211,238,0.5)]"
+          >
+            Log In to Continue
+          </button>
+        </div>
+      </motion.div>
     );
   }
 

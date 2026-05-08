@@ -277,7 +277,9 @@ export default function App() {
   const [isLoaded, setIsLoaded] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
-  const [currentStep, setCurrentStep] = useState<Step>('material');
+  const [currentStep, setCurrentStep] = useState<Step>(() => {
+    return (localStorage.getItem('sips_app_currentStep') as Step) || 'material';
+  });
   const [isBasketOpen, setIsBasketOpen] = useState(false);
   const [showMockingPopup, setShowMockingPopup] = useState(() => {
     const time = localStorage.getItem('mockingPopupTime');
@@ -293,33 +295,63 @@ export default function App() {
   });
   const [mockingTimeLeft, setMockingTimeLeft] = useState(30);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isGuest, setIsGuest] = useState(false);
-  const [basket, setBasket] = useState<any[]>([]);
+  const [isGuest, setIsGuest] = useState(() => {
+    return localStorage.getItem('sips_app_isGuest') === 'true';
+  });
+  const [basket, setBasket] = useState<any[]>(() => {
+    try {
+      const saved = localStorage.getItem('sips_app_basket');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return [];
+  });
   
   const handleCheckoutComplete = () => {
     localStorage.setItem('mockingPopupTime', Date.now().toString());
     setShowMockingPopup(true);
   };
-  const [selection, setSelection] = useState({
-    material: MATERIALS[0],
-    occasion: OCCASIONS[0],
-    shape: 'standard',
-    size: '500ml',
-    bottleColor: '#FFFFFF',
-    capColor: '#171717',
-    textColor: '#000000',
-    customText: 'CAPS 2024',
-    logo: null as string | null,
-    textScale: 1,
-    textPosition: 0.4,
-    textRotationX: 0,
-    textRotationZ: 0,
-    textFont: 'Inter',
-    isMoveEnabled: false,
-    logoScale: 1,
-    logoPosition: -0.6,
-    logoRotationX: 0,
+  const [selection, setSelection] = useState(() => {
+    try {
+      const saved = localStorage.getItem('sips_app_selection');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return {
+      material: MATERIALS[0],
+      occasion: OCCASIONS[0],
+      shape: 'standard',
+      size: '500ml',
+      bottleColor: '#FFFFFF',
+      capColor: '#171717',
+      textColor: '#000000',
+      customText: 'CAPS 2024',
+      logo: null as string | null,
+      textScale: 1,
+      textPosition: 0.4,
+      textRotationX: 0,
+      textRotationZ: 0,
+      textFont: 'Inter',
+      isMoveEnabled: false,
+      logoScale: 1,
+      logoPosition: -0.6,
+      logoRotationX: 0,
+    };
   });
+
+  useEffect(() => {
+    localStorage.setItem('sips_app_currentStep', currentStep);
+  }, [currentStep]);
+
+  useEffect(() => {
+    localStorage.setItem('sips_app_isGuest', isGuest.toString());
+  }, [isGuest]);
+
+  useEffect(() => {
+    localStorage.setItem('sips_app_basket', JSON.stringify(basket));
+  }, [basket]);
+
+  useEffect(() => {
+    localStorage.setItem('sips_app_selection', JSON.stringify(selection));
+  }, [selection]);
 
   useEffect(() => {
     if (showMockingPopup) {
@@ -884,8 +916,8 @@ export default function App() {
              <CustomerOrders userEmail={user?.email || ''} />
           )}
 
-          {currentStep === 'profile' && user && (
-             <UserProfile user={user} />
+          {currentStep === 'profile' && (
+             <UserProfile user={user} onLoginRequest={() => { setIsGuest(false); setCurrentStep('material'); }} />
           )}
         </AnimatePresence>
       </main>
