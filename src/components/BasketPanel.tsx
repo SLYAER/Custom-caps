@@ -15,17 +15,18 @@ export function BasketPanel({ isOpen, onClose, basket, setBasket, userEmail, onC
 
   // Group basket items by a unique identifier (e.g., combining ID + customText)
   const groupedBasket = basket.reduce((acc: any[], item: any) => {
-    const existing = acc.find(i => i.material.id === item.material.id && i.customText === item.customText);
+    const existing = acc.find(i => i.material?.id === item.material?.id && i.customText === item.customText);
+    const itemPrice = typeof item.price === 'number' ? item.price : 99; // Fallback price
     if (existing) {
       existing.quantity += 1;
-      existing.totalPrice += item.price;
+      existing.totalPrice += itemPrice;
     } else {
-      acc.push({ ...item, quantity: 1, totalPrice: item.price });
+      acc.push({ ...item, quantity: 1, totalPrice: itemPrice });
     }
     return acc;
   }, []);
 
-  const totalRaw = groupedBasket.reduce((sum: number, item: any) => sum + item.totalPrice, 0);
+  const totalRaw = groupedBasket.reduce((sum: number, item: any) => sum + (item.totalPrice || 0), 0);
   const discountRate = appliedCoupon === 'MODI JI' ? 0.1 : 0;
   const discountAmount = totalRaw * discountRate;
   const subtotal = totalRaw - discountAmount;
@@ -67,6 +68,7 @@ export function BasketPanel({ isOpen, onClose, basket, setBasket, userEmail, onC
             cleaned.material = { ...cleaned.material };
             delete cleaned.material.icon;
           }
+          delete cleaned.logo;
           cleaned = JSON.parse(JSON.stringify(cleaned));
           return cleaned;
         });
@@ -229,7 +231,7 @@ export function BasketPanel({ isOpen, onClose, basket, setBasket, userEmail, onC
                                    placeholder="COUPON"
                                    className="flex-1 bg-black/50 border border-white/10 rounded-xl py-3 px-4 text-sm font-bold text-white focus:outline-none focus:border-cyan-400 focus:bg-white/5 transition-all outline-none uppercase"
                                  />
-                                 <button onClick={handleApplyCoupon} className="bg-white/10 hover:bg-white/20 px-4 rounded-xl font-black text-xs uppercase tracking-widest transition-all">
+                                 <button type="button" onClick={handleApplyCoupon} className="bg-white/10 hover:bg-white/20 px-4 rounded-xl font-black text-xs uppercase tracking-widest transition-all">
                                    Apply
                                  </button>
                                </div>
