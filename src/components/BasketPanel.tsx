@@ -8,7 +8,8 @@ export function BasketPanel({ isOpen, onClose, basket, setBasket, userEmail, onC
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [email, setEmail] = useState(userEmail || '');
   const [address, setAddress] = useState('');
-  const [coupon, setCoupon] = useState('');
+  const [couponInput, setCouponInput] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState('');
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [error, setError] = useState('');
 
@@ -25,8 +26,17 @@ export function BasketPanel({ isOpen, onClose, basket, setBasket, userEmail, onC
   }, []);
 
   const totalRaw = groupedBasket.reduce((sum: number, item: any) => sum + item.totalPrice, 0);
-  const discount = coupon.trim().toUpperCase() === 'MODI JI' ? 0.1 : 0;
-  const total = totalRaw * (1 - discount);
+  const discountRate = appliedCoupon === 'MODI JI' ? 0.1 : 0;
+  const discountAmount = totalRaw * discountRate;
+  const subtotal = totalRaw - discountAmount;
+  const cgst = subtotal * 0.09;
+  const sgst = subtotal * 0.09;
+  const total = subtotal + cgst + sgst;
+
+  const handleApplyCoupon = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setAppliedCoupon(couponInput.trim().toUpperCase());
+  };
 
   const updateQuantity = (item: any, delta: number) => {
     if (delta > 0) {
@@ -65,8 +75,13 @@ export function BasketPanel({ isOpen, onClose, basket, setBasket, userEmail, onC
             customerEmail: email,
             address: address,
             items: cleanItems,
+            totalRaw,
+            discountRate,
+            discountAmount,
+            subtotal,
+            cgst,
+            sgst,
             total,
-            discount: discount > 0 ? discount : 0,
             status: 'pending',
             createdAt: new Date().toISOString()
         });
@@ -206,23 +221,43 @@ export function BasketPanel({ isOpen, onClose, basket, setBasket, userEmail, onC
                             </label>
                             <label className="flex flex-col gap-2">
                                <span className="font-bold text-[10px] uppercase tracking-widest text-neutral-400">Discount Code</span>
-                               <input 
-                                 type="text"
-                                 value={coupon}
-                                 onChange={(e) => setCoupon(e.target.value)}
-                                 placeholder="COUPON"
-                                 className="w-full bg-black/50 border border-white/10 rounded-xl py-3 px-4 text-sm font-bold text-white focus:outline-none focus:border-cyan-400 focus:bg-white/5 transition-all outline-none uppercase"
-                               />
+                               <div className="flex gap-2">
+                                 <input 
+                                   type="text"
+                                   value={couponInput}
+                                   onChange={(e) => setCouponInput(e.target.value)}
+                                   placeholder="COUPON"
+                                   className="flex-1 bg-black/50 border border-white/10 rounded-xl py-3 px-4 text-sm font-bold text-white focus:outline-none focus:border-cyan-400 focus:bg-white/5 transition-all outline-none uppercase"
+                                 />
+                                 <button onClick={handleApplyCoupon} className="bg-white/10 hover:bg-white/20 px-4 rounded-xl font-black text-xs uppercase tracking-widest transition-all">
+                                   Apply
+                                 </button>
+                               </div>
                             </label>
 
-                            {discount > 0 && (
-                                <div className="flex justify-between items-center px-1 font-bold text-emerald-400 text-sm mt-2">
-                                    <span>Discount applied:</span>
-                                    <span>-10%</span>
-                                </div>
-                            )}
+                            <div className="mt-4 border-t border-white/10 pt-4 space-y-2 text-sm">
+                               <div className="flex justify-between text-neutral-400 font-bold">
+                                   <span>Subtotal</span>
+                                   <span>₹{totalRaw.toFixed(2)}</span>
+                               </div>
+                               {discountRate > 0 && (
+                                 <div className="flex justify-between text-emerald-400 font-bold">
+                                     <span>Discount ({discountRate * 100}%)</span>
+                                     <span>-₹{discountAmount.toFixed(2)}</span>
+                                 </div>
+                               )}
+                               <div className="flex justify-between text-neutral-400 font-bold">
+                                   <span>CGST (9%)</span>
+                                   <span>₹{cgst.toFixed(2)}</span>
+                               </div>
+                               <div className="flex justify-between text-neutral-400 font-bold">
+                                   <span>SGST (9%)</span>
+                                   <span>₹{sgst.toFixed(2)}</span>
+                               </div>
+                            </div>
+                            
                             <div className="flex justify-between items-center px-1 font-black mb-2 mt-2 border-t border-white/10 pt-4 text-lg">
-                                <span>Total due:</span>
+                                <span>Grand Total:</span>
                                 <span className="text-cyan-400">₹{total.toFixed(2)}</span>
                             </div>
                             <button 

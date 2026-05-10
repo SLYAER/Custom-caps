@@ -1107,9 +1107,29 @@ function CustomerOrders({ userEmail }: { userEmail: string }) {
                 </div>
               </div>
 
-              <div className="pt-6 border-t border-white/5 flex justify-between items-center mt-auto">
-                <span className="font-black uppercase tracking-widest text-neutral-500">Order Total</span>
-                <span className="text-3xl font-black italic">₹{order.total}</span>
+              <div className="pt-6 border-t border-white/5 flex flex-col gap-2 mt-auto">
+                {order.subtotal !== undefined && (
+                  <div className="flex justify-between items-center text-neutral-400 text-sm font-bold uppercase tracking-widest">
+                    <span>Subtotal</span>
+                    <span>₹{order.totalRaw?.toFixed(2)}</span>
+                  </div>
+                )}
+                {order.discountRate > 0 && (
+                  <div className="flex justify-between items-center text-emerald-400 text-sm font-bold uppercase tracking-widest">
+                    <span>Discount ({(order.discountRate * 100).toFixed(0)}%)</span>
+                    <span>-₹{order.discountAmount?.toFixed(2)}</span>
+                  </div>
+                )}
+                {order.cgst !== undefined && (
+                  <div className="flex justify-between items-center text-neutral-400 text-sm font-bold uppercase tracking-widest">
+                    <span>CGST/SGST</span>
+                    <span>₹{((order.cgst || 0) + (order.sgst || 0)).toFixed(2)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between items-center mt-2 pt-2 border-t border-white/5">
+                  <span className="font-black uppercase tracking-widest text-neutral-500">Total Paid</span>
+                  <span className="text-3xl font-black italic">₹{(typeof order.total === 'number' ? order.total.toFixed(2) : order.total)}</span>
+                </div>
               </div>
             </div>
         ))}
