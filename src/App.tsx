@@ -1053,6 +1053,7 @@ function CustomerOrders({ userEmail }: { userEmail: string }) {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending': return 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20';
+      case 'accepted': return 'text-blue-400 bg-blue-400/10 border-blue-400/20';
       case 'in production': return 'text-fuchsia-400 bg-fuchsia-400/10 border-fuchsia-400/20';
       case 'in delivery': return 'text-cyan-400 bg-cyan-400/10 border-cyan-400/20';
       case 'delivered': return 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20';
@@ -1074,7 +1075,7 @@ function CustomerOrders({ userEmail }: { userEmail: string }) {
       <div className="space-y-6">
         {orders.map(order => (
             <div key={order.id} className="bg-neutral-900 border border-white/10 rounded-3xl p-8 flex flex-col hover:border-white/20 transition-all">
-              <div className="flex justify-between items-start mb-6 border-b border-white/5 pb-6">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 border-b border-white/5 pb-6 gap-4">
                 <div>
                   <div className="flex items-center gap-2 mb-2 font-black text-xl uppercase tracking-widest text-neutral-300">
                     Order <span className="text-cyan-400">#{order.id.slice(0, 6)}</span>
@@ -1094,7 +1095,7 @@ function CustomerOrders({ userEmail }: { userEmail: string }) {
               <div className="flex-1">
                 <div className="space-y-4 mb-6">
                   {order.items?.map((item: any, i: number) => (
-                    <div key={i} className="flex justify-between items-center bg-black/40 rounded-2xl p-4">
+                    <div key={i} className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-black/40 rounded-2xl p-4">
                       <div>
                         <div className="font-black text-lg flex items-center gap-2">
                            <span className="text-cyan-400">{item.quantity}x</span>

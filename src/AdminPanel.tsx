@@ -6,27 +6,45 @@ import { Package, Clock, DollarSign, CircleUser, ChevronDown, CheckCircle2, Truc
 import { Canvas } from '@react-three/fiber';
 import { Bottle3DPreview } from './Bottle3D';
 
-const STATUS_OPTIONS = ['pending', 'in production', 'in delivery', 'delivered'];
+const STATUS_OPTIONS = ['pending', 'accepted', 'in production', 'in delivery', 'delivered'];
 
 export function AdminPanel() {
   const [orders, setOrders] = useState<any[]>([]);
   const [previewItem, setPreviewItem] = useState<any>(null);
+  const [isAutoAcceptOn, setIsAutoAcceptOn] = useState(() => {
+    return localStorage.getItem('sips_admin_auto_accept') === 'true';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('sips_admin_auto_accept', isAutoAcceptOn.toString());
+  }, [isAutoAcceptOn]);
 
   useEffect(() => {
     try {
         const q = collection(db, 'orders');
-        const unsubscribe = onSnapshot(q, (snapshot) => {
+        const unsubscribe = onSnapshot(q, async (snapshot) => {
             console.log("Fetched orders:", snapshot.size);
             const fetchedOrders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             // sort by createdAt descending
             fetchedOrders.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
             setOrders(fetchedOrders);
+            
+            if (isAutoAcceptOn) {
+               const pendingOrders = fetchedOrders.filter((o: any) => o.status === 'pending');
+               for (const order of pendingOrders) {
+                   try {
+                       await updateDoc(doc(db, 'orders', order.id), { status: 'accepted' });
+                   } catch (e) {
+                       console.error("Auto accept failed", e);
+                   }
+               }
+            }
         });
         return () => unsubscribe();
     } catch (error) {
         console.error("Firestore Error: ", error);
     }
-  }, []);
+  }, [isAutoAcceptOn]);
 
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
@@ -44,6 +62,7 @@ export function AdminPanel() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending': return 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20';
+      case 'accepted': return 'text-blue-400 bg-blue-400/10 border-blue-400/20';
       case 'in production': return 'text-fuchsia-400 bg-fuchsia-400/10 border-fuchsia-400/20';
       case 'in delivery': return 'text-cyan-400 bg-cyan-400/10 border-cyan-400/20';
       case 'delivered': return 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20';
@@ -51,49 +70,16 @@ export function AdminPanel() {
     }
   };
 
-  const seedDummyOrders = async () => {
-    const isConfirmed = window.confirm('This will add 45 dummy orders. Proceed?');
-    if (!isConfirmed) return;
+  const resetAllToPending = async () => {
+    const isConfirmed = window.confirm('Are you sure you want to revert ALL orders to "pending"?');
+    if(!isConfirmed) return;
     
-    const dummyNames = ['Alex', 'Jordan', 'Taylor', 'Sam', 'Casey', 'Riley', 'Morgan', 'Quinn'];
-    const dummyDomains = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com'];
-    const dummyStatuses = ['pending', 'in production', 'in delivery', 'delivered'];
-    const dummyColors = ['Electric Cyan', 'Neon Pink', 'Matte Black', 'Brushed Steel'];
-    const dummySizes = ['500ml', '750ml', '1000ml'];
-    
-    for (let i = 0; i < 45; i++) {
-        const randomName = dummyNames[Math.floor(Math.random() * dummyNames.length)];
-        const randomDomain = dummyDomains[Math.floor(Math.random() * dummyDomains.length)];
-        const randomStatus = dummyStatuses[Math.floor(Math.random() * dummyStatuses.length)];
-        const randomColor = dummyColors[Math.floor(Math.random() * dummyColors.length)];
-        const randomSize = dummySizes[Math.floor(Math.random() * dummySizes.length)];
-        const quantity = Math.floor(Math.random() * 3) + 1;
-        const pricePerUnit = Math.floor(Math.random() * 1000) + 500;
-        
-        const randomPastDate = new Date(Date.now() - Math.floor(Math.random() * 7 * 24 * 60 * 60 * 1000));
-        
-        try {
-            await addDoc(collection(db, 'orders'), {
-                customerEmail: `${randomName.toLowerCase()}${Math.floor(Math.random() * 1000)}@${randomDomain}`,
-                createdAt: randomPastDate.toISOString(),
-                status: randomStatus,
-                items: [{
-                    quantity: quantity,
-                    customText: `SIPS-${Math.floor(Math.random() * 9999)}`,
-                    bottleColor: randomColor,
-                    size: randomSize,
-                    shape: 'Standard',
-                    totalPrice: pricePerUnit * quantity,
-                    material: {
-                         name: 'Titanium'
-                    }
-                }],
-                total: pricePerUnit * quantity
-            });
-        } catch(e) {
-            console.error('Failed dummy add', e);
-        }
+    for(const order of orders) {
+      if(order.status !== 'pending') {
+         await updateDoc(doc(db, 'orders', order.id), { status: 'pending' });
+      }
     }
+    alert('All orders reset to pending.');
   };
 
   return (
@@ -103,17 +89,28 @@ export function AdminPanel() {
       </div>
       
       <section>
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-8 gap-4 flex-wrap">
           <h2 className="text-3xl font-display font-black flex items-center gap-3">
             <Package className="text-cyan-400 w-8 h-8" />
             Active Orders ({orders.length})
           </h2>
-          <button 
-             onClick={seedDummyOrders}
-             className="px-4 py-2 border border-dashed border-white/20 hover:bg-white/5 text-neutral-400 font-mono text-xs uppercase tracking-widest rounded-xl transition-colors"
-          >
-             Seed 45 Orders
-          </button>
+          <div className="flex gap-4 items-center">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <span className="text-xs font-black uppercase tracking-widest text-neutral-400">Auto-Accept New</span>
+              <div 
+                className={`w-12 h-6 rounded-full transition-colors relative ${isAutoAcceptOn ? 'bg-cyan-500' : 'bg-neutral-800'}`}
+                onClick={() => setIsAutoAcceptOn(!isAutoAcceptOn)}
+              >
+                 <div className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-all ${isAutoAcceptOn ? 'left-7' : 'left-1'}`} />
+              </div>
+            </label>
+            <button 
+               onClick={resetAllToPending}
+               className="px-4 py-2 border border-dashed border-red-500/50 hover:bg-red-500/10 text-red-400 font-mono text-xs uppercase tracking-widest rounded-xl transition-colors"
+            >
+               Reset All To Pending
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
