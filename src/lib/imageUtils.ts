@@ -6,12 +6,22 @@ export const processAndCropImage = (dataUrl: string): Promise<string> => {
     }
     img.onload = () => {
       try {
+        const MAX_DIMENSION = 512;
+        let targetWidth = img.width || 1;
+        let targetHeight = img.height || 1;
+
+        if (targetWidth > MAX_DIMENSION || targetHeight > MAX_DIMENSION) {
+          const ratio = Math.min(MAX_DIMENSION / targetWidth, MAX_DIMENSION / targetHeight);
+          targetWidth = Math.max(1, Math.floor(targetWidth * ratio));
+          targetHeight = Math.max(1, Math.floor(targetHeight * ratio));
+        }
+
         const canvas = document.createElement('canvas');
-        canvas.width = img.width || 1;
-        canvas.height = img.height || 1;
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
         const ctx = canvas.getContext('2d');
         if (!ctx) return resolve(dataUrl);
-        ctx.drawImage(img, 0, 0);
+        ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const data = imageData.data;
         
@@ -42,7 +52,7 @@ export const processAndCropImage = (dataUrl: string): Promise<string> => {
         ctx.putImageData(imageData, 0, 0);
         
         if (minX > maxX || minY > maxY) {
-          return resolve(canvas.toDataURL('image/png'));
+          return resolve(canvas.toDataURL('image/webp', 0.8));
         }
         
         const cropW = maxX - minX + 1;
@@ -53,9 +63,9 @@ export const processAndCropImage = (dataUrl: string): Promise<string> => {
         const cropCtx = cropCanvas.getContext('2d');
         if (cropCtx) {
           cropCtx.putImageData(ctx.getImageData(minX, minY, cropW, cropH), 0, 0);
-          resolve(cropCanvas.toDataURL('image/png'));
+          resolve(cropCanvas.toDataURL('image/webp', 0.8));
         } else {
-          resolve(canvas.toDataURL('image/png'));
+          resolve(canvas.toDataURL('image/webp', 0.8));
         }
       } catch (err) {
         console.error("Image processing error:", err);
