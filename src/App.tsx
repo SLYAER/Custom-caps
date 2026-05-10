@@ -356,11 +356,21 @@ export default function App() {
   }, [adminOverride]);
 
   useEffect(() => {
-    localStorage.setItem('sips_app_basket', JSON.stringify(basket));
+    try {
+      const storageBasket = basket.map(item => ({ ...item, logo: null }));
+      localStorage.setItem('sips_app_basket', JSON.stringify(storageBasket));
+    } catch (e) {
+      console.error('Failed to save basket to localStorage:', e);
+    }
   }, [basket]);
 
   useEffect(() => {
-    localStorage.setItem('sips_app_selection', JSON.stringify(selection));
+    try {
+      const storageSelection = { ...selection, logo: null };
+      localStorage.setItem('sips_app_selection', JSON.stringify(storageSelection));
+    } catch (e) {
+      console.error('Failed to save selection to localStorage:', e);
+    }
   }, [selection]);
 
   useEffect(() => {
