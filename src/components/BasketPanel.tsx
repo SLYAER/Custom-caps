@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingBag, X, Trash2, CreditCard, Plus, Minus, CheckCircle2, Check, Mail } from 'lucide-react';
+import { ShoppingBag, X, Trash2, CreditCard, Plus, Minus, CheckCircle2, Check, Mail, Package } from 'lucide-react';
 import { useState } from 'react';
 import { db } from '../lib/firebase';
 import { collection, addDoc } from 'firebase/firestore';
@@ -129,18 +129,21 @@ export function BasketPanel({ isOpen, onClose, basket, setBasket, userEmail, onC
               <h2 className="text-3xl font-black flex items-center gap-3">
                 <ShoppingBag className="text-cyan-400 w-8 h-8" /> Basket
               </h2>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 <button 
                   onClick={() => {
                     handleClose();
                     if (onGoToOrders) onGoToOrders();
                   }} 
-                  className="px-4 py-2 border border-dashed border-white/20 hover:bg-white/5 text-neutral-400 font-mono text-xs uppercase tracking-widest rounded-xl transition-colors"
+                  className="pl-3 pr-4 py-2 bg-white/5 hover:bg-white/10 text-white font-bold text-xs uppercase tracking-widest rounded-full transition-all flex items-center gap-2 border border-white/10 hover:border-white/20 group"
+                  title="My Orders"
                 >
-                  My Orders
+                  <Package className="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform" />
+                  <span className="hidden sm:inline">Orders</span>
                 </button>
-                <button onClick={handleClose} className="p-3 hover:bg-white/10 rounded-full transition-colors">
-                  <X className="w-6 h-6" />
+                <div className="w-px h-6 bg-white/10" />
+                <button onClick={handleClose} className="p-2.5 bg-white/5 border border-white/10 hover:bg-white/10 rounded-full transition-colors">
+                  <X className="w-5 h-5" />
                 </button>
               </div>
             </div>

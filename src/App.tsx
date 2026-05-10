@@ -274,6 +274,8 @@ function BottleRealisticPreview({ selection }: { selection: any }) {
 }
 
 export default function App() {
+  const lastTap = useRef<number>(0);
+  const lastTapId = useRef<string>('');
   const [isLoaded, setIsLoaded] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -346,6 +348,15 @@ export default function App() {
       logoRotationX: 0,
     };
   });
+
+  useEffect(() => {
+    if (isSidebarOpen || isBasketOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [isSidebarOpen, isBasketOpen]);
 
   useEffect(() => {
     localStorage.setItem('sips_app_currentStep', currentStep);
@@ -551,8 +562,16 @@ export default function App() {
                     variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.98 }}
-                    onClick={() => setSelection({ ...selection, material: mat })}
-                    onDoubleClick={() => { setSelection({ ...selection, material: mat }); nextStep('occasion'); }}
+                    onClick={() => {
+                        const now = Date.now();
+                        if (now - lastTap.current < 400 && lastTapId.current === mat.id) {
+                            nextStep('occasion');
+                        } else {
+                            setSelection({ ...selection, material: mat });
+                        }
+                        lastTap.current = now;
+                        lastTapId.current = mat.id;
+                    }}
                     className={`p-8 rounded-[40px] text-left transition-all relative overflow-hidden group touch-manipulation ${
                       selection.material.id === mat.id 
                       ? 'bg-white/10 ring-2 ring-cyan-400 border-transparent shadow-2xl shadow-cyan-500/10' 
@@ -609,8 +628,16 @@ export default function App() {
                 {OCCASIONS.map((occ) => (
                   <button
                     key={occ.id}
-                    onClick={() => setSelection({ ...selection, occasion: occ, customText: occ.defaultText, bottleColor: occ.defaultColor })}
-                    onDoubleClick={() => { setSelection({ ...selection, occasion: occ, customText: occ.defaultText, bottleColor: occ.defaultColor }); nextStep('design'); }}
+                    onClick={() => {
+                        const now = Date.now();
+                        if (now - lastTap.current < 400 && lastTapId.current === occ.id) {
+                            nextStep('design');
+                        } else {
+                            setSelection({ ...selection, occasion: occ, customText: occ.defaultText, bottleColor: occ.defaultColor });
+                        }
+                        lastTap.current = now;
+                        lastTapId.current = occ.id;
+                    }}
                     className={`p-10 rounded-[48px] text-left transition-all touch-manipulation ${
                       selection.occasion.id === occ.id 
                       ? 'bg-neutral-900 ring-2 ring-purple-500/50' 
