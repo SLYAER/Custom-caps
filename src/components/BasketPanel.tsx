@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { db } from '../lib/firebase';
 import { collection, addDoc } from 'firebase/firestore';
 
-export function BasketPanel({ isOpen, onClose, basket, setBasket, userEmail, onCheckoutComplete }: any) {
+export function BasketPanel({ isOpen, onClose, basket, setBasket, userEmail, onCheckoutComplete, onGoToOrders }: any) {
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [email, setEmail] = useState(userEmail || '');
   const [address, setAddress] = useState('');
@@ -129,9 +129,20 @@ export function BasketPanel({ isOpen, onClose, basket, setBasket, userEmail, onC
               <h2 className="text-3xl font-black flex items-center gap-3">
                 <ShoppingBag className="text-cyan-400 w-8 h-8" /> Basket
               </h2>
-              <button onClick={handleClose} className="p-3 hover:bg-white/10 rounded-full transition-colors">
-                <X className="w-6 h-6" />
-              </button>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => {
+                    handleClose();
+                    if (onGoToOrders) onGoToOrders();
+                  }} 
+                  className="px-4 py-2 border border-dashed border-white/20 hover:bg-white/5 text-neutral-400 font-mono text-xs uppercase tracking-widest rounded-xl transition-colors"
+                >
+                  My Orders
+                </button>
+                <button onClick={handleClose} className="p-3 hover:bg-white/10 rounded-full transition-colors">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
             </div>
 
             {!isCheckingOut ? (

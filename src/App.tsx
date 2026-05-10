@@ -501,9 +501,13 @@ export default function App() {
                <span className="hidden sm:inline">₹{basket.reduce((sum, item) => sum + item.price, 0)}</span>
                <span className="bg-black/50 px-2 py-0.5 rounded-full text-[10px] sm:text-xs">({basket.length})</span>
             </button>
-            {user && (
+            {user ? (
                 <button onClick={() => { signOut(auth); setIsGuest(false); }} className="text-[10px] sm:text-xs font-bold text-neutral-500 hover:text-red-400 transition-colors bg-white/5 px-3 py-2 rounded-xl">
                   Logout
+                </button>
+            ) : (
+                <button onClick={() => { setIsGuest(false); nextStep('profile'); }} className="text-[10px] sm:text-xs font-bold text-cyan-400 hover:text-cyan-300 transition-colors bg-cyan-500/10 hover:bg-cyan-500/20 px-3 py-2 rounded-xl">
+                  Log In
                 </button>
             )}
             <div className="hidden lg:flex gap-1 text-[10px] font-bold tracking-widest uppercase text-neutral-500 ml-8">
@@ -970,7 +974,15 @@ export default function App() {
       <footer className="relative z-10 py-10 border-t border-white/5 text-center mt-auto flex flex-col items-center gap-4">
          <p className="text-[10px] font-black text-neutral-600 uppercase tracking-[0.4em]">Proprietary Customisation Platform v4.0.0-PRO</p>
       </footer>
-      <BasketPanel isOpen={isBasketOpen} onClose={() => setIsBasketOpen(false)} basket={basket} setBasket={setBasket} userEmail={user?.email || ''} onCheckoutComplete={handleCheckoutComplete} />
+      <BasketPanel 
+        isOpen={isBasketOpen} 
+        onClose={() => setIsBasketOpen(false)} 
+        basket={basket} 
+        setBasket={setBasket} 
+        userEmail={user?.email || ''} 
+        onCheckoutComplete={handleCheckoutComplete} 
+        onGoToOrders={() => { setIsBasketOpen(false); nextStep('orders'); }}
+      />
       
       <AnimatePresence>
         {showMockingPopup && (
