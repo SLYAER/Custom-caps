@@ -125,28 +125,28 @@ export function BasketPanel({ isOpen, onClose, basket, setBasket, userEmail, onC
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
             className="fixed right-0 top-0 h-full w-full sm:w-[500px] bg-neutral-950 border-l border-white/10 z-50 p-8 flex flex-col overflow-y-auto"
           >
-            <div className="flex justify-between items-center mb-10 shrink-0">
+            <div className="flex justify-between items-center mb-6 shrink-0">
               <h2 className="text-3xl font-black flex items-center gap-3">
                 <ShoppingBag className="text-cyan-400 w-8 h-8" /> Basket
               </h2>
-              <div className="flex items-center gap-3">
-                <button 
-                  onClick={() => {
-                    handleClose();
-                    if (onGoToOrders) onGoToOrders();
-                  }} 
-                  className="pl-3 pr-4 py-2 bg-white/5 hover:bg-white/10 text-white font-bold text-xs uppercase tracking-widest rounded-full transition-all flex items-center gap-2 border border-white/10 hover:border-white/20 group"
-                  title="My Orders"
-                >
-                  <Package className="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform" />
-                  <span className="hidden sm:inline">Orders</span>
-                </button>
-                <div className="w-px h-6 bg-white/10" />
-                <button onClick={handleClose} className="p-2.5 bg-white/5 border border-white/10 hover:bg-white/10 rounded-full transition-colors">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
+              <button onClick={handleClose} className="p-3 hover:bg-white/10 rounded-full transition-colors">
+                <X className="w-6 h-6" />
+              </button>
             </div>
+
+            <button 
+              onClick={() => {
+                handleClose();
+                if (onGoToOrders) onGoToOrders();
+              }}
+              className="w-full flex items-center justify-between p-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl mb-8 transition-colors group shrink-0"
+            >
+              <div className="flex items-center gap-3">
+                <Package className="text-cyan-400 w-5 h-5 group-hover:scale-110 transition-transform" />
+                <span className="font-bold uppercase tracking-widest text-sm text-white">View My Orders</span>
+              </div>
+              <span className="text-neutral-500 text-xs font-black uppercase tracking-widest group-hover:text-cyan-400 transition-colors">Go &rarr;</span>
+            </button>
 
             {!isCheckingOut ? (
               <>
