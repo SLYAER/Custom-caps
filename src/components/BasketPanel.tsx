@@ -52,11 +52,12 @@ export function BasketPanel({ isOpen, onClose, basket, setBasket, userEmail, onC
     if (basket.length > 0) {
       try {
         const cleanItems = basket.map(item => {
-          const cleaned = { ...item };
+          let cleaned = { ...item };
           if (cleaned.material) {
             cleaned.material = { ...cleaned.material };
             delete cleaned.material.icon;
           }
+          cleaned = JSON.parse(JSON.stringify(cleaned));
           return cleaned;
         });
 
@@ -176,49 +177,59 @@ export function BasketPanel({ isOpen, onClose, basket, setBasket, userEmail, onC
                         {isSubscribed ? "Order Confirmed!" : "Unit Reserved!"}
                     </h1>
                     <p className="text-neutral-400 text-sm mb-8 max-w-sm mx-auto leading-relaxed">
-                        {isSubscribed ? "We have logged your order. We will send tracking updates to your inbox." : "Your custom project has been logged in our lab. Where should we send production tracking updates?"}
+                        {isSubscribed ? "We have logged your order. We will send tracking updates to your inbox." : "Please provide your shipping and contact details to finalise your order."}
                     </p>
 
                     {!isSubscribed ? (
-                      <div className="w-full bg-white/5 border border-white/10 p-6 rounded-3xl mb-8 shadow-2xl">
-                          <div className="flex items-center gap-3 mb-4 text-left">
-                            <Mail className="w-5 h-5 text-cyan-400" />
-                            <span className="font-bold text-sm uppercase tracking-widest text-neutral-300">Tracking Email</span>
-                          </div>
+                      <div className="w-full bg-white/5 border border-white/10 p-6 rounded-3xl mb-8 shadow-2xl text-left">
                           <form onSubmit={handleOrderConfirmation} className="flex flex-col gap-4">
-                            <input 
-                              type="email"
-                              value={email}
-                              onChange={(e) => setEmail(e.target.value)}
-                              placeholder="EMAIL ADDRESS"
-                              className="w-full bg-black/50 border border-white/10 rounded-2xl py-4 px-4 text-sm font-bold text-white focus:outline-none focus:border-cyan-400 focus:bg-white/5 transition-all outline-none"
-                              required
-                            />
-                            <textarea
-                              value={address}
-                              onChange={(e) => setAddress(e.target.value)}
-                              placeholder="SHIPPING ADDRESS"
-                              className="w-full min-h-[100px] bg-black/50 border border-white/10 rounded-2xl py-4 px-4 text-sm font-bold text-white focus:outline-none focus:border-cyan-400 focus:bg-white/5 transition-all outline-none resize-none"
-                              required
-                            />
-                            <div className="flex gap-2">
-                              <input 
-                                type="text"
-                                value={coupon}
-                                onChange={(e) => setCoupon(e.target.value)}
-                                placeholder="COUPON CODE (OPTIONAL)"
-                                className="flex-1 bg-black/50 border border-white/10 rounded-2xl py-4 px-4 text-sm font-bold text-white focus:outline-none focus:border-cyan-400 focus:bg-white/5 transition-all outline-none uppercase"
-                              />
-                            </div>
-                            <div className="flex justify-between items-center px-2 font-bold mb-2 pt-2 border-t border-white/10">
+                            <label className="flex flex-col gap-2">
+                               <span className="font-bold text-[10px] uppercase tracking-widest text-neutral-400">Email Address</span>
+                               <input 
+                                 type="email"
+                                 value={email}
+                                 onChange={(e) => setEmail(e.target.value)}
+                                 placeholder="your@email.com"
+                                 className="w-full bg-black/50 border border-white/10 rounded-xl py-3 px-4 text-sm font-bold text-white focus:outline-none focus:border-cyan-400 focus:bg-white/5 transition-all outline-none"
+                                 required
+                               />
+                            </label>
+                            <label className="flex flex-col gap-2">
+                               <span className="font-bold text-[10px] uppercase tracking-widest text-neutral-400">Shipping Address</span>
+                               <textarea
+                                 value={address}
+                                 onChange={(e) => setAddress(e.target.value)}
+                                 placeholder="Full shipping address"
+                                 className="w-full min-h-[80px] bg-black/50 border border-white/10 rounded-xl py-3 px-4 text-sm font-bold text-white focus:outline-none focus:border-cyan-400 focus:bg-white/5 transition-all outline-none resize-none"
+                                 required
+                               />
+                            </label>
+                            <label className="flex flex-col gap-2">
+                               <span className="font-bold text-[10px] uppercase tracking-widest text-neutral-400">Discount Code</span>
+                               <input 
+                                 type="text"
+                                 value={coupon}
+                                 onChange={(e) => setCoupon(e.target.value)}
+                                 placeholder="COUPON"
+                                 className="w-full bg-black/50 border border-white/10 rounded-xl py-3 px-4 text-sm font-bold text-white focus:outline-none focus:border-cyan-400 focus:bg-white/5 transition-all outline-none uppercase"
+                               />
+                            </label>
+
+                            {discount > 0 && (
+                                <div className="flex justify-between items-center px-1 font-bold text-emerald-400 text-sm mt-2">
+                                    <span>Discount applied:</span>
+                                    <span>-10%</span>
+                                </div>
+                            )}
+                            <div className="flex justify-between items-center px-1 font-black mb-2 mt-2 border-t border-white/10 pt-4 text-lg">
                                 <span>Total due:</span>
-                                <span className="text-xl text-cyan-400">₹{total.toFixed(2)}</span>
+                                <span className="text-cyan-400">₹{total.toFixed(2)}</span>
                             </div>
                             <button 
                               type="submit"
-                              className="w-full bg-cyan-500 hover:bg-cyan-400 text-black py-4 rounded-2xl font-black text-sm uppercase tracking-widest transition-all"
+                              className="w-full bg-cyan-500 hover:bg-cyan-400 text-black py-4 rounded-xl font-black text-sm uppercase tracking-widest transition-all mt-2"
                             >
-                              Confirm Order
+                              Finalise Order
                             </button>
                           </form>
                       </div>

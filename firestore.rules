@@ -32,7 +32,7 @@ service cloud.firestore {
     
     match /orders/{orderId} {
       allow read: if isSignedIn() && (request.auth.token.email == resource.data.customerEmail || isAdmin());
-      allow list: if isAdmin(); // Administrative list only
+      allow list: if isSignedIn() && request.auth.token.email == resource.data.customerEmail || isAdmin();
       allow create: if true;
       allow update, delete: if isAdmin();
     }
