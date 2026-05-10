@@ -122,9 +122,15 @@ export function AdminPanel() {
               <div className="flex justify-between items-start mb-6 border-b border-white/5 pb-6">
                 <div>
                   <div className="flex items-center gap-2 mb-2">
-                    <CircleUser className="w-5 h-5 text-neutral-400" />
+                    <CircleUser className="w-5 h-5 text-cyan-400" />
                     <span className="font-bold text-lg">{order.customerEmail}</span>
                   </div>
+                  {order.address && (
+                    <div className="flex items-start gap-2 mb-2 text-neutral-400 text-sm max-w-sm">
+                      <span className="px-2 border border-white/10 rounded text-[10px] uppercase font-bold tracking-widest mt-1 shrink-0">Address</span>
+                      <span className="truncate">{order.address}</span>
+                    </div>
+                  )}
                   <div className="flex items-center gap-2 text-neutral-500 font-mono text-sm">
                     <Clock className="w-4 h-4" />
                     {new Date(order.createdAt).toLocaleString()}
@@ -184,9 +190,17 @@ export function AdminPanel() {
                 </div>
               </div>
 
-              <div className="pt-6 border-t border-white/5 flex justify-between items-center mt-auto">
-                <span className="font-black uppercase tracking-widest text-neutral-500">Order Total</span>
-                <span className="text-3xl font-black italic">₹{order.total}</span>
+              <div className="pt-6 border-t border-white/5 flex flex-col gap-2 mt-auto">
+                {order.discount > 0 && (
+                  <div className="flex justify-between items-center text-emerald-400 text-sm font-bold uppercase tracking-widest">
+                    <span>Discount Applied</span>
+                    <span>{(order.discount * 100).toFixed(0)}% OFF</span>
+                  </div>
+                )}
+                <div className="flex justify-between items-center">
+                  <span className="font-black uppercase tracking-widest text-neutral-500">Order Total</span>
+                  <span className="text-3xl font-black italic">₹{order.total}</span>
+                </div>
               </div>
             </div>
           ))}

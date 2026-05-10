@@ -94,22 +94,21 @@ function LogoDecal({ url, scale = 1, positionY = 0, radius = 1 }: { url: string,
   const cylinderHeight = circumference * aspect;
 
   return (
-    <Decal 
-      position={[0, positionY, radius]} 
-      rotation={[0, 0, 0]} 
-      scale={[cylinderHeight * 1.5, cylinderHeight, cylinderHeight * 2]}
-    >
+    <mesh position={[0, positionY, 0]} rotation={[0, Math.PI, 0]} renderOrder={2}>
+      <cylinderGeometry args={[radius + 0.002, radius + 0.002, cylinderHeight, 64, 1, true]} />
       <meshStandardMaterial 
         map={texture} 
         transparent={true}
         depthWrite={false}
+        alphaTest={0.01}
         polygonOffset={true}
         polygonOffsetFactor={-6}
         color="#ffffff"
         roughness={0.6}
         metalness={0.1}
+        side={THREE.DoubleSide}
       />
-    </Decal>
+    </mesh>
   );
 }
 
@@ -168,22 +167,21 @@ function TextDecal({ text, color, scale = 1, positionY = 0, radius = 1, font = '
   const cylinderHeight = circumference * aspect * 3.0;
 
   return (
-    <Decal 
-      position={[0, positionY, radius]} 
-      rotation={[0, 0, 0]} 
-      scale={[cylinderHeight * 1.5, cylinderHeight, cylinderHeight * 2]}
-    >
+    <mesh position={[0, positionY, 0]} rotation={[0, Math.PI, 0]} renderOrder={1}>
+      <cylinderGeometry args={[radius + 0.002, radius + 0.002, cylinderHeight, 64, 1, true]} />
       <meshStandardMaterial 
         map={texture} 
         transparent={true}
         depthWrite={false}
+        alphaTest={0.01}
         polygonOffset={true}
         polygonOffsetFactor={-4}
         color="#ffffff"
         roughness={0.6}
         metalness={0.1}
+        side={THREE.DoubleSide}
       />
-    </Decal>
+    </mesh>
   );
 }
 
@@ -387,7 +385,7 @@ function RealisticBottle({ selection, setSelection, setControlsEnabled, material
     <group position={[0, -2.5 * sizeScale, 0]} scale={[sizeScale, sizeScale, sizeScale]}>
       {/* Bottle Body */}
       <mesh>
-        <latheGeometry args={[currentPoints, 64]} />
+        <latheGeometry key={shapeId + material} args={[currentPoints, 64]} />
         {isGlass && <meshPhysicalMaterial {...glassProps} />}
         {isStainless && <meshPhysicalMaterial {...materialProps} />}
         {isPlastic && <meshPhysicalMaterial {...plasticProps} />}

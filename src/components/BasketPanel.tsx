@@ -7,6 +7,8 @@ import { collection, addDoc } from 'firebase/firestore';
 export function BasketPanel({ isOpen, onClose, basket, setBasket, userEmail, onCheckoutComplete }: any) {
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [email, setEmail] = useState(userEmail || '');
+  const [address, setAddress] = useState('');
+  const [coupon, setCoupon] = useState('');
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [error, setError] = useState('');
 
@@ -22,7 +24,9 @@ export function BasketPanel({ isOpen, onClose, basket, setBasket, userEmail, onC
     return acc;
   }, []);
 
-  const total = groupedBasket.reduce((sum: number, item: any) => sum + item.totalPrice, 0);
+  const totalRaw = groupedBasket.reduce((sum: number, item: any) => sum + item.totalPrice, 0);
+  const discount = coupon.trim().toUpperCase() === 'MODI JI' ? 0.1 : 0;
+  const total = totalRaw * (1 - discount);
 
   const updateQuantity = (item: any, delta: number) => {
     if (delta > 0) {
@@ -57,9 +61,11 @@ export function BasketPanel({ isOpen, onClose, basket, setBasket, userEmail, onC
         });
 
         await addDoc(collection(db, 'orders'), {
-            customerEmail: email, // Use the email from state
+            customerEmail: email,
+            address: address,
             items: cleanItems,
             total,
+            discount: discount > 0 ? discount : 0,
             status: 'pending',
             createdAt: new Date().toISOString()
         });
@@ -188,6 +194,26 @@ export function BasketPanel({ isOpen, onClose, basket, setBasket, userEmail, onC
                               className="w-full bg-black/50 border border-white/10 rounded-2xl py-4 px-4 text-sm font-bold text-white focus:outline-none focus:border-cyan-400 focus:bg-white/5 transition-all outline-none"
                               required
                             />
+                            <textarea
+                              value={address}
+                              onChange={(e) => setAddress(e.target.value)}
+                              placeholder="SHIPPING ADDRESS"
+                              className="w-full min-h-[100px] bg-black/50 border border-white/10 rounded-2xl py-4 px-4 text-sm font-bold text-white focus:outline-none focus:border-cyan-400 focus:bg-white/5 transition-all outline-none resize-none"
+                              required
+                            />
+                            <div className="flex gap-2">
+                              <input 
+                                type="text"
+                                value={coupon}
+                                onChange={(e) => setCoupon(e.target.value)}
+                                placeholder="COUPON CODE (OPTIONAL)"
+                                className="flex-1 bg-black/50 border border-white/10 rounded-2xl py-4 px-4 text-sm font-bold text-white focus:outline-none focus:border-cyan-400 focus:bg-white/5 transition-all outline-none uppercase"
+                              />
+                            </div>
+                            <div className="flex justify-between items-center px-2 font-bold mb-2 pt-2 border-t border-white/10">
+                                <span>Total due:</span>
+                                <span className="text-xl text-cyan-400">₹{total.toFixed(2)}</span>
+                            </div>
                             <button 
                               type="submit"
                               className="w-full bg-cyan-500 hover:bg-cyan-400 text-black py-4 rounded-2xl font-black text-sm uppercase tracking-widest transition-all"
