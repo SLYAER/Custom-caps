@@ -16,6 +16,12 @@ export function AdminPanel() {
   });
 
   useEffect(() => {
+    if (previewItem) document.body.style.overflow = 'hidden';
+    else document.body.style.overflow = '';
+    return () => { document.body.style.overflow = ''; };
+  }, [previewItem]);
+
+  useEffect(() => {
     localStorage.setItem('sips_admin_auto_accept', isAutoAcceptOn.toString());
   }, [isAutoAcceptOn]);
 
@@ -228,9 +234,10 @@ export function AdminPanel() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-xl flex flex-col items-center justify-center p-4"
+            className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-xl flex flex-col items-center justify-center p-4 touch-none"
+            onPointerMove={(e) => e.stopPropagation()}
           >
-            <button onClick={() => setPreviewItem(null)} className="absolute top-4 sm:top-8 right-4 sm:right-8 text-white p-3 bg-white/10 hover:bg-white/20 rounded-full transition-colors flex items-center gap-2">
+            <button onClick={() => setPreviewItem(null)} className="absolute top-4 sm:top-8 right-4 sm:right-8 text-white p-3 bg-white/10 hover:bg-white/20 rounded-full transition-colors flex items-center gap-2 mt-16 sm:mt-0 z-[101]">
               <X className="w-6 h-6" /> <span className="font-bold uppercase tracking-widest text-xs hidden sm:inline">Close</span>
             </button>
             

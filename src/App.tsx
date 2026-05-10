@@ -278,6 +278,10 @@ export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [currentStep, setCurrentStep] = useState<Step>(() => {
+    const hash = window.location.hash.replace('#', '') as Step;
+    if (hash && ['material', 'occasion', 'design', 'review', 'about', 'admin', 'orders', 'profile'].includes(hash)) {
+      return hash;
+    }
     return (localStorage.getItem('sips_app_currentStep') as Step) || 'material';
   });
   const [isBasketOpen, setIsBasketOpen] = useState(false);
@@ -345,7 +349,21 @@ export default function App() {
 
   useEffect(() => {
     localStorage.setItem('sips_app_currentStep', currentStep);
+    if (window.location.hash.replace('#', '') !== currentStep) {
+        window.history.pushState(null, '', `#${currentStep}`);
+    }
   }, [currentStep]);
+
+  useEffect(() => {
+      const handlePopState = () => {
+          const hash = window.location.hash.replace('#', '') as Step;
+          if (hash && ['material', 'occasion', 'design', 'review', 'about', 'admin', 'orders', 'profile'].includes(hash)) {
+              setCurrentStep(hash);
+          }
+      };
+      window.addEventListener('popstate', handlePopState);
+      return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('sips_app_isGuest', isGuest.toString());
@@ -530,7 +548,8 @@ export default function App() {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => setSelection({ ...selection, material: mat })}
-                    className={`p-8 rounded-[40px] text-left transition-all relative overflow-hidden group ${
+                    onDoubleClick={() => { setSelection({ ...selection, material: mat }); nextStep('occasion'); }}
+                    className={`p-8 rounded-[40px] text-left transition-all relative overflow-hidden group touch-manipulation ${
                       selection.material.id === mat.id 
                       ? 'bg-white/10 ring-2 ring-cyan-400 border-transparent shadow-2xl shadow-cyan-500/10' 
                       : 'bg-white/5 border border-white/5 hover:bg-white/[0.08]'
@@ -587,7 +606,8 @@ export default function App() {
                   <button
                     key={occ.id}
                     onClick={() => setSelection({ ...selection, occasion: occ, customText: occ.defaultText, bottleColor: occ.defaultColor })}
-                    className={`p-10 rounded-[48px] text-left transition-all ${
+                    onDoubleClick={() => { setSelection({ ...selection, occasion: occ, customText: occ.defaultText, bottleColor: occ.defaultColor }); nextStep('design'); }}
+                    className={`p-10 rounded-[48px] text-left transition-all touch-manipulation ${
                       selection.occasion.id === occ.id 
                       ? 'bg-neutral-900 ring-2 ring-purple-500/50' 
                       : 'bg-white/5 hover:bg-white/[0.08]'
@@ -1036,6 +1056,12 @@ function CustomerOrders({ userEmail }: { userEmail: string }) {
   const [previewItem, setPreviewItem] = useState<any>(null);
 
   useEffect(() => {
+    if (previewItem) document.body.style.overflow = 'hidden';
+    else document.body.style.overflow = '';
+    return () => { document.body.style.overflow = ''; };
+  }, [previewItem]);
+
+  useEffect(() => {
     if (!userEmail) return;
     try {
         const q = query(collection(db, 'orders'), where('customerEmail', '==', userEmail));
@@ -1159,9 +1185,10 @@ function CustomerOrders({ userEmail }: { userEmail: string }) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-xl flex flex-col items-center justify-center p-4"
+            className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-xl flex flex-col items-center justify-center p-4 touch-none"
+            onPointerMove={(e) => e.stopPropagation()}
           >
-            <button onClick={() => setPreviewItem(null)} className="absolute top-4 sm:top-8 right-4 sm:right-8 text-white p-3 bg-white/10 hover:bg-white/20 rounded-full transition-colors flex items-center gap-2 mt-16 sm:mt-0">
+            <button onClick={() => setPreviewItem(null)} className="absolute top-4 sm:top-8 right-4 sm:right-8 text-white p-3 bg-white/10 hover:bg-white/20 rounded-full transition-colors flex items-center gap-2 mt-16 sm:mt-0 z-[101]">
               <X className="w-6 h-6" /> <span className="font-bold uppercase tracking-widest text-xs hidden sm:inline">Close</span>
             </button>
             
